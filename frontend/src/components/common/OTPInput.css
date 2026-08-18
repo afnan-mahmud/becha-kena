@@ -1,0 +1,57 @@
+.otp-input-container {
+  display: flex;
+  gap: var(--space-sm);
+  justify-content: center;
+  margin: var(--space-md) 0;
+}
+
+.otp-input-container.error {
+  animation: shake 0.4s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+}
+
+.otp-input-box {
+  width: 48px;
+  height: 56px;
+  font-size: var(--text-2xl);
+  font-weight: var(--font-bold);
+  text-align: center;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background-color: var(--color-bg-white);
+  color: var(--color-text-primary);
+  transition: all var(--transition-fast);
+  outline: none;
+}
+
+.otp-input-box:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px rgba(45, 91, 255, 0.2);
+}
+
+.otp-input-box.has-error {
+  border-color: var(--color-error);
+}
+
+.otp-input-box:disabled {
+  background-color: var(--color-bg);
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+@keyframes shake {
+  10%, 90% { transform: translate3d(-1px, 0, 0); }
+  20%, 80% { transform: translate3d(2px, 0, 0); }
+  30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
+  40%, 60% { transform: translate3d(4px, 0, 0); }
+}
+
+@media (max-width: 480px) {
+  .otp-input-box {
+    width: 40px;
+    height: 48px;
+    font-size: var(--text-xl);
+  }
+  .otp-input-container {
+    gap: 6px;
+  }
+}

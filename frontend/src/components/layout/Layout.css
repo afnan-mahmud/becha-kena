@@ -1,0 +1,16 @@
+.app-layout {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.main-content {
+  flex: 1; /* This pushes the footer to the bottom when content is small */
+  padding-bottom: 0; /* Default for desktop */
+}
+
+@media (max-width: 768px) {
+  .main-content {
+    padding-bottom: 70px; /* Space for MobileBottomNav */
+  }
+}

@@ -1,0 +1,81 @@
+.mobile-bottom-nav {
+  display: none; /* Hidden on desktop by default */
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  background-color: var(--color-bg-white);
+  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
+  z-index: var(--z-sticky);
+  padding-bottom: env(safe-area-inset-bottom); /* iOS notch support */
+}
+
+.bottom-nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  padding: var(--space-xs) 0;
+  color: var(--color-text-secondary);
+  text-decoration: none;
+  font-size: 10px;
+  font-weight: var(--font-medium);
+  gap: 4px;
+  transition: color var(--transition-fast);
+}
+
+.bottom-nav-item.active {
+  color: var(--color-primary);
+}
+
+.icon-badge-container {
+  position: relative;
+}
+
+.icon-badge-container .badge {
+  position: absolute;
+  top: -4px;
+  right: -8px;
+  background-color: var(--color-error);
+  color: var(--color-bg-white);
+  font-size: 10px;
+  width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-full);
+  border: 2px solid var(--color-bg-white);
+}
+
+.post-ad-container {
+  cursor: pointer;
+  transform: translateY(-15px);
+}
+
+.post-ad-fab {
+  background-color: var(--color-secondary);
+  color: var(--color-text-primary);
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--shadow-md);
+  margin-bottom: 2px;
+  transition: transform var(--transition-fast), background-color var(--transition-fast);
+}
+
+.post-ad-container:hover .post-ad-fab,
+.post-ad-container:active .post-ad-fab {
+  background-color: var(--color-secondary-dark);
+  transform: scale(0.95);
+}
+
+@media (max-width: 768px) {
+  .mobile-bottom-nav {
+    display: flex;
+  }
+}

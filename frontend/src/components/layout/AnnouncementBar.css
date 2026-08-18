@@ -1,0 +1,39 @@
+.announcement-bar {
+  background-color: var(--color-bg-dark);
+  color: var(--color-bg-white);
+  padding: var(--space-xs) 0;
+  font-size: var(--text-sm);
+}
+
+.announcement-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: relative;
+}
+
+.announcement-text {
+  margin: 0;
+  text-align: center;
+  flex: 1;
+  font-weight: var(--font-medium);
+  color: var(--color-bg-white);
+}
+
+.announcement-close {
+  background: none;
+  border: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  border-radius: var(--radius-sm);
+  transition: all var(--transition-fast);
+}
+
+.announcement-close:hover {
+  color: var(--color-bg-white);
+  background-color: rgba(255, 255, 255, 0.1);
+}

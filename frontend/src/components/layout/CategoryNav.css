@@ -1,0 +1,119 @@
+.category-nav-wrapper {
+  background-color: var(--color-bg-white);
+  border-bottom: 1px solid var(--color-border);
+  position: relative;
+  z-index: var(--z-dropdown);
+}
+
+.category-nav-container {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xl);
+}
+
+.all-categories-btn {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  background-color: var(--color-primary);
+  color: var(--color-bg-white);
+  padding: var(--space-sm) var(--space-lg);
+  font-weight: var(--font-semibold);
+  cursor: pointer;
+  position: relative;
+  transition: background-color var(--transition-fast);
+  min-height: 48px;
+}
+
+.all-categories-btn:hover {
+  background-color: var(--color-primary-dark);
+}
+
+.category-links {
+  display: flex;
+  align-items: center;
+  gap: var(--space-lg);
+  flex: 1;
+  overflow-x: auto; /* For small screens */
+  scrollbar-width: none; /* Firefox */
+}
+.category-links::-webkit-scrollbar {
+  display: none; /* Chrome/Safari */
+}
+
+.nav-link {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  color: var(--color-text-primary);
+  font-weight: var(--font-medium);
+  font-size: var(--text-sm);
+  white-space: nowrap;
+  padding: var(--space-sm) 0;
+  position: relative;
+}
+
+.nav-link::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 0;
+  height: 2px;
+  background-color: var(--color-primary);
+  transition: width var(--transition-fast);
+}
+
+.nav-link:hover {
+  color: var(--color-primary);
+}
+
+.nav-link:hover::after {
+  width: 100%;
+}
+
+.nav-link.highlight {
+  color: var(--color-accent);
+}
+
+.text-accent {
+  color: var(--color-accent);
+}
+.text-primary-light {
+  color: var(--color-primary-light);
+}
+
+.special-offer {
+  display: flex;
+  align-items: center;
+  white-space: nowrap;
+}
+
+.offer-text {
+  color: var(--color-error);
+  font-weight: var(--font-bold);
+  font-style: italic;
+  font-size: var(--text-sm);
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% { opacity: 1; }
+  50% { opacity: 0.6; }
+  100% { opacity: 1; }
+}
+
+@media (max-width: 768px) {
+  .category-nav-wrapper {
+    overflow-x: auto;
+  }
+  .category-nav-container {
+    gap: var(--space-md);
+  }
+  .all-categories-btn {
+    display: none; /* Often handled via hamburger menu on mobile */
+  }
+  .special-offer {
+    display: none;
+  }
+}
