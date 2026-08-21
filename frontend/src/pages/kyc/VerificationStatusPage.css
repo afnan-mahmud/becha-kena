@@ -1,0 +1,114 @@
+.kyc-status-container {
+  max-width: 600px;
+  margin: 2rem auto;
+  padding: 0 1rem;
+}
+
+.kyc-status-card {
+  background-color: var(--bg-white);
+  border: 1px solid var(--border-color);
+  border-radius: 1rem;
+  padding: 2.5rem 2rem;
+  text-align: center;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+}
+
+.status-icon-wrapper {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 0 auto 1.5rem;
+}
+
+.status-icon-wrapper.pending {
+  background-color: rgba(245, 158, 11, 0.1);
+  color: #d97706; /* amber-600 */
+}
+
+.status-icon-wrapper.approved {
+  background-color: rgba(16, 185, 129, 0.1);
+  color: #059669; /* emerald-600 */
+}
+
+.status-icon-wrapper.rejected {
+  background-color: rgba(239, 68, 68, 0.1);
+  color: #dc2626; /* red-600 */
+}
+
+.kyc-status-card h1 {
+  font-size: 1.5rem;
+  color: var(--text-primary);
+  margin-bottom: 0.5rem;
+}
+
+.status-description {
+  color: var(--text-secondary);
+  margin-bottom: 1.5rem;
+  line-height: 1.5;
+}
+
+.status-details-box {
+  background-color: var(--bg-secondary);
+  border-radius: 0.5rem;
+  padding: 1.25rem;
+  text-align: left;
+  margin-bottom: 2rem;
+}
+
+.status-detail-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+  font-size: 0.9375rem;
+}
+
+.status-detail-row:last-child {
+  margin-bottom: 0;
+}
+
+.status-detail-label {
+  color: var(--text-muted);
+}
+
+.status-detail-value {
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.status-rejection-reason {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px dashed var(--border-color);
+  color: #dc2626;
+}
+
+.status-rejection-reason .label {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+}
+
+.kyc-status-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.empty-status-state {
+  text-align: center;
+  padding: 3rem 1rem;
+}
+
+.empty-status-state h2 {
+  font-size: 1.25rem;
+  margin-bottom: 0.5rem;
+}
+
+.empty-status-state p {
+  color: var(--text-secondary);
+  margin-bottom: 1.5rem;
+}

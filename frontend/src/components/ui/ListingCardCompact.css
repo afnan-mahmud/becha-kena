@@ -1,0 +1,51 @@
+.listing-card-compact {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  padding: var(--space-sm);
+  background-color: var(--color-bg-white);
+  border-radius: var(--radius-sm);
+  text-decoration: none;
+  color: var(--color-text-primary);
+  transition: var(--transition-fast);
+  border: 1px solid transparent;
+}
+
+.listing-card-compact:hover {
+  background-color: var(--color-bg);
+  border-color: var(--color-border);
+}
+
+.compact-image {
+  width: 60px;
+  height: 60px;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.compact-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.compact-content {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  overflow: hidden;
+}
+
+.compact-title {
+  font-size: var(--text-sm);
+  font-weight: var(--font-medium);
+  margin: 0;
+  line-height: 1.2;
+}
+
+.compact-price {
+  font-size: var(--text-base);
+  font-weight: var(--font-bold);
+  color: var(--color-primary);
+}

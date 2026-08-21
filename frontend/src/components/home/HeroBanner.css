@@ -1,0 +1,206 @@
+.hero-banner {
+  display: flex;
+  gap: var(--space-md);
+  height: 400px;
+}
+
+.hero-carousel {
+  width: 70%;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow-md);
+}
+
+.hero-carousel .swiper {
+  width: 100%;
+  height: 100%;
+  border-radius: var(--radius-lg);
+}
+
+.slide-content {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  padding: var(--space-3xl);
+  color: var(--color-bg-white);
+}
+
+.slide-text {
+  max-width: 80%;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  align-items: flex-start;
+}
+
+.slide-text h2 {
+  font-size: var(--text-4xl);
+  font-weight: var(--font-bold);
+  color: var(--color-bg-white);
+  line-height: 1.2;
+  margin: 0;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.slide-text p {
+  font-size: var(--text-xl);
+  opacity: 0.9;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.slide-cta {
+  background-color: var(--color-bg-white);
+  color: var(--color-text-primary);
+  border: none;
+  padding: var(--space-sm) var(--space-xl);
+  font-size: var(--text-base);
+  font-weight: var(--font-semibold);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: var(--transition-normal);
+  margin-top: var(--space-sm);
+}
+
+.slide-cta:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+/* Swiper custom styles */
+.swiper-pagination-bullet {
+  background-color: var(--color-bg-white) !important;
+  opacity: 0.5 !important;
+}
+
+.swiper-pagination-bullet-active {
+  background-color: var(--color-secondary) !important;
+  opacity: 1 !important;
+}
+
+.swiper-button-next,
+.swiper-button-prev {
+  color: var(--color-bg-white) !important;
+  opacity: 0;
+  transition: opacity var(--transition-normal);
+}
+
+.hero-carousel:hover .swiper-button-next,
+.hero-carousel:hover .swiper-button-prev {
+  opacity: 1;
+}
+
+/* Right side cards */
+.hero-side-cards {
+  width: 30%;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.promo-card {
+  flex: 1;
+  border-radius: var(--radius-lg);
+  position: relative;
+  overflow: hidden;
+  box-shadow: var(--shadow-md);
+  color: var(--color-bg-white);
+  cursor: pointer;
+}
+
+.card-bg {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  transition: transform 0.5s ease;
+}
+
+.promo-card:hover .card-bg {
+  transform: scale(1.1);
+}
+
+.card-verified .card-bg {
+  background-image: url('https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?auto=format&fit=crop&q=80&w=600');
+}
+
+.card-deals .card-bg {
+  background-image: url('https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?auto=format&fit=crop&q=80&w=600');
+}
+
+.card-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(30, 64, 175, 0.8), rgba(45, 91, 255, 0.8));
+  transition: opacity var(--transition-normal);
+}
+
+.card-deals .card-overlay {
+  background: linear-gradient(135deg, rgba(202, 138, 4, 0.8), rgba(245, 158, 11, 0.8));
+}
+
+.promo-card:hover .card-overlay {
+  opacity: 0.9;
+}
+
+.card-content {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  gap: var(--space-sm);
+  text-align: center;
+  padding: var(--space-md);
+}
+
+.card-content h3 {
+  font-size: var(--text-lg);
+  font-weight: var(--font-semibold);
+  margin: 0;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+/* Responsive styles */
+@media (max-width: 1024px) {
+  .hero-banner {
+    height: auto;
+    flex-direction: column;
+  }
+
+  .hero-carousel {
+    width: 100%;
+    height: 350px;
+  }
+
+  .hero-side-cards {
+    width: 100%;
+    flex-direction: row;
+    height: 160px;
+  }
+
+  .slide-text h2 {
+    font-size: var(--text-3xl);
+  }
+}
+
+@media (max-width: 640px) {
+  .hero-side-cards {
+    flex-direction: column;
+    height: 300px;
+  }
+
+  .slide-content {
+    padding: var(--space-xl);
+  }
+
+  .slide-text h2 {
+    font-size: var(--text-2xl);
+  }
+
+  .slide-text p {
+    font-size: var(--text-base);
+  }
+}

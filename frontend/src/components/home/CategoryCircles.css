@@ -1,0 +1,67 @@
+.category-circles-wrapper {
+  padding: var(--space-xl) 0;
+}
+
+.category-circles {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-md);
+  overflow-x: auto;
+  padding-bottom: var(--space-sm);
+  /* Hide scrollbar */
+  scrollbar-width: none; /* Firefox */
+}
+
+.category-circles::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
+}
+
+.category-circle-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-sm);
+  text-decoration: none;
+  min-width: 80px;
+  cursor: pointer;
+  transition: transform var(--transition-normal);
+}
+
+.category-circle-item:hover {
+  transform: translateY(-4px);
+}
+
+.category-circle-icon {
+  width: 70px;
+  height: 70px;
+  border-radius: var(--radius-full);
+  background-color: var(--color-bg-white);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-primary);
+  position: relative;
+  box-shadow: var(--shadow-sm);
+}
+
+.category-circle-icon::before {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  border-radius: var(--radius-full);
+  background: linear-gradient(135deg, var(--color-primary), var(--color-accent));
+  z-index: -1;
+  transition: opacity var(--transition-normal);
+}
+
+.category-circle-item:hover .category-circle-icon {
+  box-shadow: var(--shadow-md);
+}
+
+.category-circle-name {
+  font-size: var(--text-sm);
+  font-weight: var(--font-medium);
+  color: var(--color-text-primary);
+  text-align: center;
+}

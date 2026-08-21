@@ -1,0 +1,134 @@
+.my-reports-container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 2rem 1rem;
+}
+
+.my-reports-header {
+  margin-bottom: 2rem;
+}
+
+.my-reports-header h1 {
+  font-size: 1.5rem;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.reports-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.report-card {
+  background-color: var(--bg-white);
+  border: 1px solid var(--border-color);
+  border-radius: 0.75rem;
+  padding: 1.25rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+}
+
+.report-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1rem;
+}
+
+.report-target-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.report-target-type {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.report-target-id {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  font-family: monospace;
+}
+
+.report-status-badge {
+  padding: 0.25rem 0.75rem;
+  border-radius: 1rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  display: inline-flex;
+  align-items: center;
+}
+
+.report-status-badge.pending {
+  background-color: rgba(245, 158, 11, 0.1);
+  color: #d97706; /* amber-600 */
+}
+
+.report-status-badge.resolved {
+  background-color: rgba(16, 185, 129, 0.1);
+  color: #059669; /* emerald-600 */
+}
+
+.report-status-badge.dismissed {
+  background-color: rgba(107, 114, 128, 0.1);
+  color: #4b5563; /* gray-600 */
+}
+
+.report-reason-title {
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 0.5rem;
+}
+
+.report-description {
+  color: var(--text-secondary);
+  font-size: 0.9375rem;
+  line-height: 1.5;
+  background-color: var(--bg-secondary);
+  padding: 0.75rem;
+  border-radius: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.report-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-top: 1px dashed var(--border-color);
+  padding-top: 1rem;
+}
+
+.report-date {
+  font-size: 0.875rem;
+  color: var(--text-muted);
+}
+
+.empty-reports-state {
+  text-align: center;
+  padding: 4rem 2rem;
+  background-color: var(--bg-white);
+  border: 1px solid var(--border-color);
+  border-radius: 1rem;
+}
+
+.empty-reports-state svg {
+  color: var(--text-muted);
+  margin-bottom: 1rem;
+}
+
+.empty-reports-state h3 {
+  font-size: 1.25rem;
+  margin-bottom: 0.5rem;
+}
+
+.empty-reports-state p {
+  color: var(--text-secondary);
+}

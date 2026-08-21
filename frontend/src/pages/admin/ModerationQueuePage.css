@@ -1,0 +1,157 @@
+.moderation-queue {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.moderation-table-container {
+  background-color: var(--bg-white);
+  border-radius: 1rem;
+  border: 1px solid var(--border-color);
+  overflow: hidden;
+}
+
+.moderation-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.moderation-table th {
+  background-color: var(--bg-secondary);
+  padding: 1rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.moderation-table td {
+  padding: 1rem;
+  border-bottom: 1px solid var(--border-color);
+  vertical-align: middle;
+}
+
+.moderation-table tr:last-child td {
+  border-bottom: none;
+}
+
+.moderation-thumb {
+  width: 48px;
+  height: 48px;
+  border-radius: 0.5rem;
+  object-fit: cover;
+  background-color: var(--bg-secondary);
+}
+
+.listing-title {
+  font-weight: 500;
+  color: var(--text-primary);
+  margin-bottom: 0.25rem;
+}
+
+.listing-meta {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.flag-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.25rem 0.5rem;
+  background-color: #fee2e2;
+  color: #dc2626;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.action-btn {
+  padding: 0.5rem;
+  border-radius: 0.5rem;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.btn-approve {
+  background-color: #d1fae5;
+  color: #059669;
+}
+.btn-approve:hover {
+  background-color: #059669;
+  color: white;
+}
+
+.btn-reject {
+  background-color: #fee2e2;
+  color: #dc2626;
+}
+.btn-reject:hover {
+  background-color: #dc2626;
+  color: white;
+}
+
+.btn-view {
+  background-color: #e0f2fe;
+  color: #0284c7;
+}
+.btn-view:hover {
+  background-color: #0284c7;
+  color: white;
+}
+
+.empty-state {
+  padding: 3rem;
+  text-align: center;
+  color: var(--text-secondary);
+}
+
+/* Modal specific for reason */
+.reject-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+
+.reject-modal {
+  background-color: white;
+  border-radius: 1rem;
+  padding: 2rem;
+  width: 100%;
+  max-width: 400px;
+}
+
+.reject-modal h3 {
+  margin: 0 0 1rem 0;
+  font-size: 1.25rem;
+}
+
+.reject-textarea {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid var(--border-color);
+  border-radius: 0.5rem;
+  margin-bottom: 1rem;
+  resize: vertical;
+  min-height: 100px;
+}
+
+.reject-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+}

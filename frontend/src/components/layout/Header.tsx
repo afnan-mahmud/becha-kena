@@ -1,4 +1,4 @@
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { Search, Menu, ShoppingBag, User, LogOut, MessageCircle, Settings, FileText, CheckCircle, PlusCircle, Globe } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import { useUiStore } from '../../store/uiStore';
@@ -83,24 +83,24 @@ export const Header = () => {
                 <span>My Account</span>
               </button>
               <div className="user-dropdown">
-                <Link to="/profile" className="dropdown-item">
+                <NavLink to="/profile" end className={({ isActive }) => `dropdown-item ${isActive ? 'text-primary bg-blue-50 font-medium' : ''}`}>
                   <User size={16} /> My Profile
-                </Link>
-                <Link to="/dashboard/listings" className="dropdown-item">
+                </NavLink>
+                <NavLink to="/dashboard/my-listings" className={({ isActive }) => `dropdown-item ${isActive ? 'text-primary bg-blue-50 font-medium' : ''}`}>
                   <FileText size={16} /> My Listings
-                </Link>
-                <Link to="/chat" className="dropdown-item">
+                </NavLink>
+                <NavLink to="/chat" className={({ isActive }) => `dropdown-item ${isActive ? 'text-primary bg-blue-50 font-medium' : ''}`}>
                   <MessageCircle size={16} /> Messages
                   <span className="badge">2</span>
-                </Link>
+                </NavLink>
                 {!isVerified && (
-                  <Link to="/verify" className="dropdown-item verify-link">
+                  <NavLink to="/verify" className={({ isActive }) => `dropdown-item verify-link ${isActive ? 'font-medium' : ''}`}>
                     <CheckCircle size={16} /> Verify Account
-                  </Link>
+                  </NavLink>
                 )}
-                <Link to="/profile/settings" className="dropdown-item">
+                <NavLink to="/profile/settings" className={({ isActive }) => `dropdown-item ${isActive ? 'text-primary bg-blue-50 font-medium' : ''}`}>
                   <Settings size={16} /> Settings
-                </Link>
+                </NavLink>
                 <button onClick={clearUser} className="dropdown-item logout-btn">
                   <LogOut size={16} /> Logout
                 </button>

@@ -1,0 +1,97 @@
+.hot-deals-section {
+  margin-bottom: var(--space-2xl);
+}
+
+.hot-deals-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--space-xl);
+  padding-bottom: var(--space-sm);
+  border-bottom: 2px solid var(--color-accent);
+}
+
+.header-title h2 {
+  font-size: var(--text-2xl);
+  font-weight: var(--font-bold);
+  color: var(--color-text-primary);
+  margin: 0;
+}
+
+.header-timer {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  background-color: rgba(255, 107, 53, 0.1);
+  color: var(--color-accent);
+  padding: var(--space-sm) var(--space-md);
+  border-radius: var(--radius-full);
+  font-weight: var(--font-semibold);
+  font-size: var(--text-sm);
+}
+
+.listings-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-lg);
+}
+
+.listing-skeleton {
+  aspect-ratio: 3/4;
+  background: linear-gradient(90deg, var(--color-bg) 25%, var(--color-border) 50%, var(--color-bg) 75%);
+  background-size: 400% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: var(--radius-md);
+}
+
+@keyframes shimmer {
+  0% { background-position: 100% 0; }
+  100% { background-position: -100% 0; }
+}
+
+.see-more-container {
+  display: flex;
+  justify-content: center;
+  margin-top: var(--space-xl);
+}
+
+.see-more-link {
+  display: inline-block;
+  padding: var(--space-sm) var(--space-2xl);
+  border: 1px solid var(--color-primary);
+  color: var(--color-primary);
+  border-radius: var(--radius-full);
+  font-weight: var(--font-semibold);
+  text-decoration: none;
+  transition: var(--transition-normal);
+}
+
+.see-more-link:hover {
+  background-color: var(--color-primary);
+  color: var(--color-bg-white);
+}
+
+.error-message, .empty-message {
+  text-align: center;
+  padding: var(--space-2xl);
+  color: var(--color-text-secondary);
+  background-color: var(--color-bg-white);
+  border-radius: var(--radius-md);
+}
+
+@media (max-width: 1024px) {
+  .listings-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .listings-grid {
+    grid-template-columns: 1fr;
+  }
+  .hot-deals-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-sm);
+  }
+}

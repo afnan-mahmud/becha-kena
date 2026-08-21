@@ -1,0 +1,115 @@
+.image-gallery-container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+}
+
+.image-gallery-placeholder {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  border-radius: var(--border-radius-lg);
+  overflow: hidden;
+  background-color: var(--background-color);
+}
+
+.image-gallery-placeholder img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.main-image-wrapper {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  border-radius: var(--border-radius-lg);
+  overflow: hidden;
+  background-color: #000; /* Dark background for images */
+}
+
+.main-swiper {
+  width: 100%;
+  height: 100%;
+}
+
+.image-zoom-container {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.image-zoom-container img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  transition: transform 0.3s ease;
+}
+
+/* Simple hover zoom effect for desktop */
+@media (hover: hover) {
+  .image-zoom-container:hover img {
+    transform: scale(1.1);
+  }
+}
+
+.sold-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.6);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2.5rem;
+  font-weight: 800;
+  z-index: 10;
+  backdrop-filter: blur(2px);
+  pointer-events: none;
+  transform: rotate(-15deg);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+}
+
+.thumbnail-wrapper {
+  width: 100%;
+  height: 80px;
+}
+
+.thumbnail-swiper {
+  height: 100%;
+  box-sizing: border-box;
+}
+
+.thumbnail-swiper .swiper-slide {
+  width: 25%;
+  height: 100%;
+  opacity: 0.5;
+  transition: opacity 0.2s ease;
+  cursor: pointer;
+  border-radius: var(--border-radius-md);
+  overflow: hidden;
+}
+
+.thumbnail-swiper .swiper-slide-thumb-active {
+  opacity: 1;
+  border: 2px solid var(--primary-color);
+}
+
+.thumb-container {
+  width: 100%;
+  height: 100%;
+}
+
+.thumb-container img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}

@@ -16,7 +16,7 @@ export interface IUser {
 export interface IListing {
   id: string;
   sellerId: string;
-  seller?: Pick<IUser, 'displayName' | 'verifiedName' | 'isVerified' | 'averageRating' | 'totalReviews'>;
+  seller?: Pick<IUser, 'displayName' | 'verifiedName' | 'isVerified' | 'averageRating' | 'totalReviews' | 'phoneNumber'>;
   title: string;
   description: string;
   price: number;
@@ -44,9 +44,9 @@ export interface IChatRoom {
   listingId: string;
   listing?: Pick<IListing, 'title' | 'images' | 'price' | 'status'>;
   buyerId: string;
-  buyer?: Pick<IUser, 'displayName'>;
+  buyer?: Pick<IUser, 'displayName' | 'isVerified'>;
   sellerId: string;
-  seller?: Pick<IUser, 'displayName'>;
+  seller?: Pick<IUser, 'displayName' | 'isVerified'>;
   lastMessage?: string;
   unreadCount: number;
   createdAt: Date | string;
@@ -86,7 +86,9 @@ export interface IReport {
 
 export interface IVerificationLog {
   id: string;
-  userId: string;
+  userId: string | Pick<IUser, 'displayName' | 'phoneNumber'>;
+  verificationType?: 'adult' | 'minor';
+  selfiePath?: string;
   verificationStatus: 'pending' | 'approved' | 'rejected';
   manualReviewReason?: string;
   createdAt: Date | string;
@@ -119,6 +121,7 @@ export interface ListingFilters {
   page?: number;
   limit?: number;
   status?: string;
+  sellerId?: string;
 }
 
 export const ListingCategory = {

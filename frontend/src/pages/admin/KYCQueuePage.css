@@ -1,0 +1,106 @@
+/* Reuse styles from moderation queue for consistency where possible */
+.kyc-queue {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.kyc-table-container {
+  background-color: var(--bg-white);
+  border-radius: 1rem;
+  border: 1px solid var(--border-color);
+  overflow: hidden;
+}
+
+.kyc-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.kyc-table th {
+  background-color: var(--bg-secondary);
+  padding: 1rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.kyc-table td {
+  padding: 1rem;
+  border-bottom: 1px solid var(--border-color);
+  vertical-align: middle;
+}
+
+.kyc-table tr:last-child td {
+  border-bottom: none;
+}
+
+.kyc-type-badge {
+  display: inline-block;
+  padding: 0.25rem 0.5rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.kyc-type-adult {
+  background-color: #e0f2fe;
+  color: #0284c7;
+}
+
+.kyc-type-minor {
+  background-color: #fce7f3;
+  color: #db2777;
+}
+
+.kyc-reason {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  max-width: 250px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Modal specific for selfie */
+.selfie-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+
+.selfie-modal {
+  background-color: white;
+  border-radius: 1rem;
+  padding: 1.5rem;
+  width: 100%;
+  max-width: 500px;
+  position: relative;
+}
+
+.selfie-modal-close {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-secondary);
+}
+
+.selfie-modal-close:hover {
+  color: var(--text-primary);
+}
+
+.selfie-image {
+  width: 100%;
+  border-radius: 0.5rem;
+  margin-top: 1rem;
+  display: block;
+}

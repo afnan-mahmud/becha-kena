@@ -1,0 +1,58 @@
+.custom-tabs-container {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+.custom-tabs-header {
+  display: flex;
+  gap: 1rem;
+  border-bottom: 1px solid var(--border-color);
+  margin-bottom: 1rem;
+  overflow-x: auto;
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE/Edge */
+}
+
+.custom-tabs-header::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
+}
+
+.custom-tab-button {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--text-secondary);
+  font-weight: 500;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.custom-tab-button:hover {
+  color: var(--text-primary);
+}
+
+.custom-tab-button.active {
+  color: var(--primary-color);
+  border-bottom-color: var(--primary-color);
+}
+
+.custom-tab-badge {
+  background-color: var(--bg-secondary);
+  color: var(--text-secondary);
+  padding: 0.125rem 0.5rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.custom-tab-button.active .custom-tab-badge {
+  background-color: rgba(37, 99, 235, 0.1);
+  color: var(--primary-color);
+}
