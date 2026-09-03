@@ -3,6 +3,28 @@ import * as adminService from '../services/admin.service';
 import { sendSuccess } from '../utils/response';
 import { AppError } from '../utils/AppError';
 
+// -- Dashboard Stats --
+export const getDashboardStats = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const stats = await adminService.getDashboardStats();
+    sendSuccess(res, 200, 'Dashboard stats retrieved', stats);
+  } catch (error) {
+    next(error);
+  }
+};
+
+// -- User Management --
+export const getUsers = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 20;
+    const data = await adminService.getUsers(page, limit);
+    sendSuccess(res, 200, 'Users retrieved', data);
+  } catch (error) {
+    next(error);
+  }
+};
+
 // -- Moderation --
 export const getModerationQueue = async (req: Request, res: Response, next: NextFunction) => {
   try {
