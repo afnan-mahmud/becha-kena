@@ -105,3 +105,49 @@
     transform: scale(1) translateY(0);
   }
 }
+
+/* Mobile Drawer */
+@media (max-width: 768px) {
+  .modal-overlay {
+    align-items: flex-end;
+    padding: 0;
+  }
+
+  .modal-card {
+    border-radius: 1rem 1rem 0 0;
+    max-height: 95vh;
+    animation: slide-up-drawer 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+
+  .modal-header {
+    position: relative;
+    padding-top: 2rem;
+  }
+
+  .modal-header::before {
+    content: '';
+    position: absolute;
+    top: 8px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 40px;
+    height: 4px;
+    background-color: var(--color-border);
+    border-radius: 4px;
+  }
+  
+  .modal-close-btn {
+    padding: 10px; /* larger touch target */
+  }
+}
+
+@keyframes slide-up-drawer {
+  from {
+    opacity: 0;
+    transform: translateY(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

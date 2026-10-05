@@ -14,6 +14,8 @@ export const requestOTP = async (req: Request, res: Response, next: NextFunction
 
     res.status(200).json({
       status: 'success',
+      success: true,
+      message: 'OTP sent successfully',
       data: result, // { expiresIn: 180 }
     });
   } catch (error) {
@@ -50,6 +52,8 @@ export const verifyOTP = async (req: Request, res: Response, next: NextFunction)
 
     res.status(200).json({
       status: 'success',
+      success: true,
+      message: 'Verified successfully',
       data: {
         user,
       },
@@ -72,7 +76,37 @@ export const logout = async (req: Request, res: Response, next: NextFunction) =>
 
     res.status(200).json({
       status: 'success',
+      success: true,
       message: 'Logged out successfully',
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const refreshToken = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const token = req.cookies?.refreshToken;
+    if (!token) {
+      return next(new AppError('Refresh token missing', 401, 'TOKEN_MISSING'));
+    }
+
+    const { accessToken } = await authService.refreshToken(token);
+
+    const isProduction = process.env.NODE_ENV === 'production';
+
+    res.cookie('accessToken', accessToken, {
+      httpOnly: true,
+      secure: isProduction,
+      sameSite: 'strict',
+      maxAge: 15 * 60 * 1000, // 15 minutes
+    });
+
+    res.status(200).json({
+      status: 'success',
+      success: true,
+      message: 'Token refreshed',
+      data: { accessToken }
     });
   } catch (error) {
     next(error);

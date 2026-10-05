@@ -84,4 +84,37 @@
   --container-lg: 1024px;
   --container-xl: 1280px;
   --container-2xl: 1440px;
+
+  /* Breakpoints */
+  --bp-mobile: 480px;
+  --bp-tablet: 768px;
+  --bp-sm-desktop: 1024px;
+  --bp-desktop: 1440px;
+
+  /* Legacy Compatibility Variables (Used in components) */
+  --primary-color: var(--color-primary);
+  --primary-color-dark: var(--color-primary-dark);
+  --primary-hover: var(--color-primary-dark);
+  --primary-light: var(--color-primary-light);
+  --secondary-color: var(--color-secondary);
+  --success-color: var(--color-success);
+  --danger-color: var(--color-error);
+  
+  --text-primary: var(--color-text-primary);
+  --text-secondary: var(--color-text-secondary);
+  --text-muted: var(--color-text-muted);
+  --text-color: var(--color-text-primary);
+  --text-light: var(--color-text-muted);
+  
+  --border-color: var(--color-border);
+  --bg-secondary: #E5E7EB;
+  --bg-white: var(--color-bg-white);
+  --surface-color: var(--color-bg-white);
+  --background-color: var(--color-bg);
+  --card-bg: var(--color-bg-white);
+  
+  --border-radius-sm: var(--radius-sm);
+  --border-radius-md: var(--radius-md);
+  --border-radius-lg: var(--radius-lg);
+  --border-radius-full: var(--radius-full);
 }

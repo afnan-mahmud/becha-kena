@@ -7,7 +7,8 @@ export const getMe = async (req: Request, res: Response, next: NextFunction) => 
     const profile = await userService.getProfile(userId);
     res.status(200).json({
       status: 'success',
-      data: { user: profile }
+      success: true,
+      data: profile
     });
   } catch (error) {
     next(error);
@@ -20,7 +21,8 @@ export const updateMe = async (req: Request, res: Response, next: NextFunction) 
     const updatedUser = await userService.updateProfile(userId, req.body);
     res.status(200).json({
       status: 'success',
-      data: { user: updatedUser }
+      success: true,
+      data: updatedUser
     });
   } catch (error) {
     next(error);
@@ -38,6 +40,7 @@ export const deleteMe = async (req: Request, res: Response, next: NextFunction) 
 
     res.status(200).json({
       status: 'success',
+      success: true,
       data: result
     });
   } catch (error) {
@@ -50,7 +53,8 @@ export const getPublicProfile = async (req: Request, res: Response, next: NextFu
     const profile = await userService.getPublicProfile(req.params.id as string);
     res.status(200).json({
       status: 'success',
-      data: { user: profile }
+      success: true,
+      data: profile
     });
   } catch (error) {
     next(error);

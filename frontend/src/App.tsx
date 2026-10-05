@@ -4,6 +4,8 @@ import { AppProviders } from './components/providers/AppProviders';
 import { useAuthStore } from './store/authStore';
 import { LoadingSpinner } from './components/common/LoadingSpinner';
 import { AppRouter } from './routes/AppRouter';
+import { ErrorBoundary } from './components/common/ErrorBoundary';
+import { NetworkStatus } from './components/common/NetworkStatus';
 
 function AppContent() {
   const { isLoading, fetchUser } = useAuthStore();
@@ -21,11 +23,14 @@ function AppContent() {
 
 function App() {
   return (
-    <BrowserRouter>
-      <AppProviders>
-        <AppContent />
-      </AppProviders>
-    </BrowserRouter>
+    <ErrorBoundary>
+      <NetworkStatus />
+      <BrowserRouter>
+        <AppProviders>
+          <AppContent />
+        </AppProviders>
+      </BrowserRouter>
+    </ErrorBoundary>
   );
 }
 

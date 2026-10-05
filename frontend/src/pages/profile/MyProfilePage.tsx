@@ -7,6 +7,7 @@ import toast from 'react-hot-toast';
 import { useAuthStore } from '../../store/authStore';
 import { getReviewsForUser } from '../../services/review.service';
 import { deleteAccount } from '../../services/user.service';
+import { logout } from '../../services/auth.service';
 import { formatDate } from '../../utils/formatters';
 
 import { UserAvatar } from '../../components/ui/UserAvatar';
@@ -44,6 +45,17 @@ export const MyProfilePage = () => {
       navigate('/');
     } catch (error) {
       toast.error('সমস্যা হয়েছে। আবার চেষ্টা করুন।');
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+    } catch (error) {
+      console.error('Logout failed:', error);
+    } finally {
+      clearUser();
+      navigate('/');
     }
   };
 
@@ -146,6 +158,13 @@ export const MyProfilePage = () => {
 
       <div className="danger-zone">
         <h3 style={{ color: 'var(--text-primary)', marginBottom: '1rem' }}>অ্যাকাউন্ট সেটিংস</h3>
+        <button 
+          className="btn btn-outline"
+          onClick={handleLogout}
+          style={{ marginRight: '1rem', color: 'var(--color-error)', borderColor: 'var(--color-error)', backgroundColor: 'transparent' }}
+        >
+          লগআউট করুন
+        </button>
         <button 
           className="delete-account-btn"
           onClick={() => setIsDeleteModalOpen(true)}

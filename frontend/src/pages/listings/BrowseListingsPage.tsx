@@ -16,6 +16,7 @@ import { Pagination } from '../../components/common/Pagination';
 import { useDebounce } from '../../hooks/useDebounce';
 import { ListingCategory, ListingCondition } from '../../types';
 import { DIVISIONS, DISTRICTS, THANAS } from '../../utils/locations';
+import { SEOHead } from '../../components/common/SEOHead';
 import './BrowseListingsPage.css';
 
 export const BrowseListingsPage = () => {
@@ -158,6 +159,10 @@ export const BrowseListingsPage = () => {
 
   return (
     <div className="browse-page container">
+      <SEOHead 
+        title="Browse Listings — Becha-Kena" 
+        description="Browse all available items on Becha-Kena. Find what you need at the best prices."
+      />
       {/* Mobile Filter Button */}
       <div className="mobile-filter-bar">
         <div className="search-bar-mobile">
@@ -282,7 +287,7 @@ export const BrowseListingsPage = () => {
             <button className="btn btn-primary" onClick={() => setIsMobileFilterOpen(false)}>
               ফিল্টার প্রয়োগ করুন
             </button>
-            <button className="text-link mt-3 text-center w-100" onClick={resetFilters}>
+            <button className="btn btn-outline mt-3 w-100" onClick={resetFilters}>
               ফিল্টার রিসেট
             </button>
           </div>

@@ -24,8 +24,10 @@ api.interceptors.response.use(
         );
         return api(originalRequest);
       } catch (refreshError) {
-        // Handle failed refresh
-        window.location.href = '/login';
+        // Handle failed refresh, but don't force redirect if it's just checking the initial session
+        if (originalRequest.url !== '/users/me' && window.location.pathname !== '/login') {
+          window.location.href = '/login';
+        }
         return Promise.reject(refreshError);
       }
     }
@@ -33,9 +35,13 @@ api.interceptors.response.use(
     if (error.response?.status === 403) {
       const errorData = error.response.data as { code?: string; error?: string };
       if (errorData?.code === 'ACCOUNT_SUSPENDED') {
-        window.location.href = '/suspended';
+        if (window.location.pathname !== '/suspended') {
+          window.location.href = '/suspended';
+        }
       } else if (errorData?.code === 'VERIFICATION_REQUIRED') {
-        window.location.href = '/verify';
+        if (window.location.pathname !== '/verify') {
+          window.location.href = '/verify';
+        }
       }
     }
 

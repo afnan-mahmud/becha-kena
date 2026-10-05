@@ -10,5 +10,6 @@ const router = Router();
 router.post('/request-otp', otpRateLimiter, validate(requestOtpSchema), authController.requestOTP);
 router.post('/verify-otp', validate(verifyOtpSchema), authController.verifyOTP);
 router.post('/logout', authenticate, authController.logout);
+router.post('/refresh', authController.refreshToken);
 
 export default router;

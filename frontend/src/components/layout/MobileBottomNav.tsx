@@ -62,7 +62,7 @@ export const MobileBottomNav = () => {
         className={({ isActive }) => `bottom-nav-item ${isActive ? 'active' : ''}`}
       >
         <User size={24} />
-        <span>প্রোফাইল</span>
+        <span>{isAuthenticated ? 'প্রোফাইল' : 'লগইন'}</span>
       </NavLink>
     </nav>
   );

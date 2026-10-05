@@ -37,7 +37,8 @@ export const VerificationPage = () => {
     if (!selfieFile) throw new Error("Selfie is missing");
     
     // Get presigned URL
-    const { data } = await getPresignedUrl('selfie.webp', selfieFile.type, `kyc/${user?.id}`);
+    const userId = user?.id || (user as any)?._id || 'unknown';
+    const { data } = await getPresignedUrl('selfie.webp', selfieFile.type, `kyc/${userId}`);
     
     // Upload to S3
     await uploadFileToS3(data.uploadUrl, selfieFile);
@@ -63,16 +64,15 @@ export const VerificationPage = () => {
       if (kycType === 'adult') {
         await submitAdultVerification({
           nidNumber,
-          dateOfBirth: dob,
+          dob,
           selfieUrl
         });
       } else {
         await submitMinorVerification({
-          nidNumber,
-          dateOfBirth: dob,
           parentNidNumber: parentNid,
-          parentDateOfBirth: parentDob,
-          parentSelfieUrl: selfieUrl // Minor form uses parent selfie for simplicity/MVP
+          dob,
+          parentSelfieUrl: selfieUrl,
+          consentConfirmed: consentGiven
         });
       }
 

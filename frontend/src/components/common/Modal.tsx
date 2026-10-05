@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { X } from 'lucide-react';
 import './Modal.css';
 
@@ -19,18 +19,50 @@ export const Modal: React.FC<ModalProps> = ({
   children,
   footer,
 }) => {
-  // Close on Escape key
+  const modalRef = useRef<HTMLDivElement>(null);
+
+  // Close on Escape key and Focus Trap
   useEffect(() => {
-    const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+        return;
+      }
+      
+      if (e.key === 'Tab' && modalRef.current) {
+        const focusableElements = modalRef.current.querySelectorAll(
+          'a[href], button, textarea, input, select, [tabindex]:not([tabindex="-1"])'
+        );
+        const firstElement = focusableElements[0] as HTMLElement;
+        const lastElement = focusableElements[focusableElements.length - 1] as HTMLElement;
+
+        if (e.shiftKey) {
+          if (document.activeElement === firstElement) {
+            lastElement.focus();
+            e.preventDefault();
+          }
+        } else {
+          if (document.activeElement === lastElement) {
+            firstElement.focus();
+            e.preventDefault();
+          }
+        }
+      }
     };
+
     if (isOpen) {
-      document.addEventListener('keydown', handleEscape);
+      document.addEventListener('keydown', handleKeyDown);
       // Prevent body scroll
       document.body.style.overflow = 'hidden';
+      // Focus modal initially
+      setTimeout(() => {
+        if (modalRef.current) {
+          modalRef.current.focus();
+        }
+      }, 10);
     }
     return () => {
-      document.removeEventListener('keydown', handleEscape);
+      document.removeEventListener('keydown', handleKeyDown);
       document.body.style.overflow = '';
     };
   }, [isOpen, onClose]);
@@ -45,7 +77,11 @@ export const Modal: React.FC<ModalProps> = ({
 
   return (
     <div className="modal-overlay" onClick={handleBackdropClick} role="dialog" aria-modal="true">
-      <div className={`modal-card modal-size-${size}`}>
+      <div 
+        className={`modal-card modal-size-${size}`}
+        ref={modalRef}
+        tabIndex={-1}
+      >
         
         <div className="modal-header">
           {title && <h3 className="modal-title">{title}</h3>}

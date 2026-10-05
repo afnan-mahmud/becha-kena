@@ -4,7 +4,7 @@ import { ShoppingBag, ArrowLeft } from 'lucide-react';
 import { OTPInput } from '../../components/common/OTPInput';
 import { useAuthStore } from '../../store/authStore';
 import * as authService from '../../services/auth.service';
-import { LoadingSpinner } from '../../components/common/LoadingSpinner';
+import { Button } from '../../components/common/Button';
 import './LoginPage.css';
 
 export const LoginPage = () => {
@@ -74,7 +74,9 @@ export const LoginPage = () => {
       const res = await authService.verifyOTP(phone, otp);
       if (res.success) {
         await fetchUser(); // Update global auth state
-        const redirectTo = searchParams.get('redirect') || '/';
+        const { user: loggedInUser } = useAuthStore.getState();
+        const defaultRedirect = (loggedInUser?.role === 'admin' || loggedInUser?.role === 'moderator') ? '/admin' : '/';
+        const redirectTo = searchParams.get('redirect') || defaultRedirect;
         navigate(redirectTo, { replace: true });
       } else {
         setOtpError('ভুল OTP কোড');
@@ -128,13 +130,14 @@ export const LoginPage = () => {
             </div>
             {phoneError && <p className="error-text">{phoneError}</p>}
 
-            <button
+            <Button
               type="submit"
-              className="btn btn-primary login-btn"
-              disabled={isLoading || phone.length !== 11}
+              className="login-btn"
+              disabled={phone.length !== 11}
+              isLoading={isLoading}
             >
-              {isLoading ? <LoadingSpinner /> : 'OTP পাঠান'}
-            </button>
+              OTP পাঠান
+            </Button>
           </form>
         ) : (
           <form onSubmit={handleVerifySubmit} className="login-form">
@@ -179,13 +182,14 @@ export const LoginPage = () => {
               )}
             </div>
 
-            <button
+            <Button
               type="submit"
-              className="btn btn-primary login-btn"
-              disabled={isLoading || otp.length !== 6}
+              className="login-btn"
+              disabled={otp.length !== 6}
+              isLoading={isLoading}
             >
-              {isLoading ? <LoadingSpinner /> : 'ভেরিফাই করুন'}
-            </button>
+              ভেরিফাই করুন
+            </Button>
           </form>
         )}
       </div>

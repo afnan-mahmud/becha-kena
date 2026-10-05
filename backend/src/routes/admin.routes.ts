@@ -9,6 +9,12 @@ const router = Router();
 router.use(authenticate);
 router.use(authorize('admin', 'moderator'));
 
+// Dashboard
+router.get('/stats', adminController.getDashboardStats);
+
+// User Management
+router.get('/users', adminController.getUsers);
+
 // Moderation
 router.get('/moderation/listings', adminController.getModerationQueue);
 router.patch('/moderation/listings/:id', adminController.moderateListing);

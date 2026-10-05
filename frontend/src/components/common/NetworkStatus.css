@@ -1,0 +1,21 @@
+.network-status-banner {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  padding: 8px 16px;
+  text-align: center;
+  font-weight: 500;
+  color: white;
+  z-index: 9999; /* Higher than everything else */
+  transition: transform 0.3s ease, background-color 0.3s ease;
+  font-size: 0.9rem;
+}
+
+.network-status-banner.offline {
+  background-color: var(--color-error, #EF4444);
+}
+
+.network-status-banner.online {
+  background-color: var(--color-success, #22C55E);
+}

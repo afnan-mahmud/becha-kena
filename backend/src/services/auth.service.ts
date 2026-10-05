@@ -1,6 +1,6 @@
 import { normalizePhone } from '../utils/phone';
 import { generateOTP, hashOTP, compareOTP } from '../utils/otp';
-import { generateAccessToken, generateRefreshToken } from '../utils/jwt';
+import { generateAccessToken, generateRefreshToken, verifyRefreshToken } from '../utils/jwt';
 import { AppError } from '../utils/AppError';
 import TemporaryOtp from '../models/TemporaryOtp';
 import User from '../models/User';
@@ -87,4 +87,31 @@ export const logout = async (userId: string): Promise<void> => {
     user.tokenVersion += 1;
     await user.save();
   }
+};
+
+export const refreshToken = async (token: string) => {
+  let payload: any;
+  try {
+    payload = verifyRefreshToken(token);
+  } catch (error) {
+    throw new AppError('Invalid or expired refresh token', 401, 'INVALID_TOKEN');
+  }
+
+  const user = await User.findById(payload.userId);
+
+  if (!user || user.status === 'suspended') {
+    throw new AppError('User not found or suspended', 401, 'INVALID_TOKEN');
+  }
+
+  if (user.tokenVersion !== payload.tokenVersion) {
+    throw new AppError('Token has been revoked', 401, 'TOKEN_EXPIRED');
+  }
+
+  const accessToken = generateAccessToken({
+    userId: (user._id as any).toString(),
+    role: user.role,
+    tokenVersion: user.tokenVersion,
+  });
+
+  return { accessToken };
 };

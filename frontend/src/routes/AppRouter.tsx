@@ -1,6 +1,8 @@
+import { Suspense, lazy } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import { Layout } from '../components/layout/Layout';
+import { LoadingSpinner } from '../components/common/LoadingSpinner';
 
 // Public Pages
 import { LoginPage } from '../pages/auth/LoginPage';
@@ -17,17 +19,20 @@ import { MyReportsPage } from '../pages/profile/MyReportsPage';
 import { MyListingsPage } from '../pages/dashboard/MyListingsPage';
 import { VerificationPage } from '../pages/kyc/VerificationPage';
 import { VerificationStatusPage } from '../pages/kyc/VerificationStatusPage';
-import { CreateListingPage } from '../pages/listings/CreateListingPage';
-import { EditListingPage } from '../pages/listings/EditListingPage';
-import { ChatPage } from '../pages/chat/ChatPage';
+
+// Lazy Loaded Pages
+const CreateListingPage = lazy(() => import('../pages/listings/CreateListingPage').then(module => ({ default: module.CreateListingPage })));
+const EditListingPage = lazy(() => import('../pages/listings/EditListingPage').then(module => ({ default: module.EditListingPage })));
+const ChatPage = lazy(() => import('../pages/chat/ChatPage').then(module => ({ default: module.ChatPage })));
 
 // Admin Pages
 import { AdminRoute } from './AdminRoute';
 import { AdminLayout } from '../components/layout/AdminLayout';
-import { AdminDashboardPage } from '../pages/admin/AdminDashboardPage';
-import { ModerationQueuePage } from '../pages/admin/ModerationQueuePage';
-import { KYCQueuePage } from '../pages/admin/KYCQueuePage';
-import { ReportManagementPage } from '../pages/admin/ReportManagementPage';
+const AdminDashboardPage = lazy(() => import('../pages/admin/AdminDashboardPage').then(module => ({ default: module.AdminDashboardPage })));
+const ModerationQueuePage = lazy(() => import('../pages/admin/ModerationQueuePage').then(module => ({ default: module.ModerationQueuePage })));
+const KYCQueuePage = lazy(() => import('../pages/admin/KYCQueuePage').then(module => ({ default: module.KYCQueuePage })));
+const ReportManagementPage = lazy(() => import('../pages/admin/ReportManagementPage').then(module => ({ default: module.ReportManagementPage })));
+const UserManagementPage = lazy(() => import('../pages/admin/UserManagementPage').then(module => ({ default: module.UserManagementPage })));
 
 // Error Pages
 import { NotFoundPage } from '../pages/errors/NotFoundPage';
@@ -48,10 +53,11 @@ export const AppRouter = () => {
       {/* Admin Routes */}
       <Route element={<AdminRoute />}>
         <Route element={<AdminLayout />}>
-          <Route path="/admin" element={<AdminDashboardPage />} />
-          <Route path="/admin/moderation" element={<ModerationQueuePage />} />
-          <Route path="/admin/kyc-queue" element={<KYCQueuePage />} />
-          <Route path="/admin/reports" element={<ReportManagementPage />} />
+          <Route path="/admin" element={<Suspense fallback={<LoadingSpinner fullScreen />}><AdminDashboardPage /></Suspense>} />
+          <Route path="/admin/moderation" element={<Suspense fallback={<LoadingSpinner fullScreen />}><ModerationQueuePage /></Suspense>} />
+          <Route path="/admin/kyc-queue" element={<Suspense fallback={<LoadingSpinner fullScreen />}><KYCQueuePage /></Suspense>} />
+          <Route path="/admin/reports" element={<Suspense fallback={<LoadingSpinner fullScreen />}><ReportManagementPage /></Suspense>} />
+          <Route path="/admin/users" element={<Suspense fallback={<LoadingSpinner fullScreen />}><UserManagementPage /></Suspense>} />
         </Route>
       </Route>
 
@@ -78,9 +84,9 @@ export const AppRouter = () => {
 
         {/* Verified Routes (Require Login + Verification) */}
         <Route element={<ProtectedRoute requireVerified />}>
-          <Route path="/listings/create" element={<CreateListingPage />} />
-          <Route path="/listings/:id/edit" element={<EditListingPage />} />
-          <Route path="/chat/:roomId?" element={<ChatPage />} />
+          <Route path="/listings/create" element={<Suspense fallback={<LoadingSpinner fullScreen />}><CreateListingPage /></Suspense>} />
+          <Route path="/listings/:id/edit" element={<Suspense fallback={<LoadingSpinner fullScreen />}><EditListingPage /></Suspense>} />
+          <Route path="/chat/:roomId?" element={<Suspense fallback={<LoadingSpinner fullScreen />}><ChatPage /></Suspense>} />
         </Route>
 
         {/* 404 Not Found Catch-all */}

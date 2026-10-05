@@ -307,22 +307,44 @@ input:checked + .slider:before {
 /* Responsive */
 @media (max-width: 640px) {
   .create-listing-page {
-    padding-top: 20px;
+    padding-top: 16px;
+    padding-bottom: 80px;
+    max-width: 100%;
   }
   
   .create-listing-container {
-    padding: 24px 16px;
+    padding: 20px 12px;
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
   }
   
   .category-grid {
     grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+  
+  .category-card {
+    padding: 12px 8px;
   }
   
   .condition-options {
     flex-direction: column;
+    gap: 12px;
   }
   
   .location-grid {
     grid-template-columns: 1fr;
   }
+
+  .form-actions {
+    flex-direction: column-reverse;
+    gap: 12px;
+  }
+
+  .form-actions button {
+    width: 100%;
+  }
 }
+
+

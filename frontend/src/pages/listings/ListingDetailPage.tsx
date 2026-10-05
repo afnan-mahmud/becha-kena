@@ -18,6 +18,7 @@ import { VerifiedBadge } from '../../components/ui/VerifiedBadge';
 import { ListingCard } from '../../components/ui/ListingCard';
 import { ReportModal } from '../../components/report/ReportModal';
 import { formatPrice, formatRelativeTime } from '../../utils/formatters';
+import { SEOHead } from '../../components/common/SEOHead';
 import './ListingDetailPage.css';
 
 export const ListingDetailPage = () => {
@@ -92,6 +93,11 @@ export const ListingDetailPage = () => {
 
   return (
     <div className="detail-page container">
+      <SEOHead 
+        title={`${listing.title} — ৳${listing.price} — Becha-Kena`}
+        description={listing.description.substring(0, 160)}
+        ogImage={listing.images[0]}
+      />
       <div className="detail-layout">
         {/* Left Column - Gallery & Description */}
         <div className="detail-main">

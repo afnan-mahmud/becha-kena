@@ -25,12 +25,14 @@ export const MyListingsPage = () => {
   const [soldModalOpen, setSoldModalOpen] = useState(false);
   const [listingToMarkSold, setListingToMarkSold] = useState<string | null>(null);
 
+  const activeStatus = activeTab === 'all' ? undefined : (activeTab === 'under_review' ? 'pending' : activeTab);
+  
   const { data: listingsData, isLoading } = useQuery({
     queryKey: ['my-listings', activeTab],
-    queryFn: () => getMyListings(activeTab === 'all' ? undefined : activeTab)
+    queryFn: () => getMyListings(activeStatus)
   });
 
-  const listings = listingsData?.data || [];
+  const listings = listingsData?.data?.listings || [];
 
   const handleEdit = (id: string) => {
     navigate(`/listings/${id}/edit`);

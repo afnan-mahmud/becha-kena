@@ -7,6 +7,37 @@ import { Report } from '../models/Report';
 import { generatePresignedReadUrl } from './s3.service';
 import { AppError } from '../utils/AppError';
 
+// -- Dashboard Stats --
+
+export const getDashboardStats = async () => {
+  const [pendingListings, pendingKYC, pendingReports, activeUsers, activeListings] = await Promise.all([
+    Listing.countDocuments({ status: 'pending' }),
+    VerificationLog.countDocuments({ verificationStatus: 'pending_review' }),
+    Report.countDocuments({ status: 'pending' }),
+    User.countDocuments({ status: 'active' }),
+    Listing.countDocuments({ status: 'active' }),
+  ]);
+
+  return { pendingListings, pendingKYC, pendingReports, activeUsers, activeListings };
+};
+
+// -- User Management --
+
+export const getUsers = async (page: number = 1, limit: number = 20) => {
+  const skip = (page - 1) * limit;
+
+  const users = await User.find()
+    .select('-password -__v') // Exclude sensitive info
+    .sort({ createdAt: -1 })
+    .skip(skip)
+    .limit(limit);
+
+  const total = await User.countDocuments();
+  const totalPages = Math.ceil(total / limit);
+
+  return { items: users, total, page, totalPages };
+};
+
 // -- Moderation Queue --
 
 export const getModerationQueue = async (page: number = 1, limit: number = 20) => {
@@ -21,7 +52,7 @@ export const getModerationQueue = async (page: number = 1, limit: number = 20) =
   const total = await Listing.countDocuments({ status: 'pending' });
   const totalPages = Math.ceil(total / limit);
 
-  return { listings, total, page, totalPages };
+  return { items: listings, total, page, totalPages };
 };
 
 export const moderateListing = async (
@@ -71,7 +102,7 @@ export const getManualVerificationQueue = async (page: number = 1, limit: number
   const total = await VerificationLog.countDocuments({ verificationStatus: 'pending_review' });
   const totalPages = Math.ceil(total / limit);
 
-  return { logs, total, page, totalPages };
+  return { items: logs, total, page, totalPages };
 };
 
 export const resolveVerification = async (
@@ -200,7 +231,7 @@ export const getReports = async (status?: string, page: number = 1, limit: numbe
   const total = await Report.countDocuments(filter);
   const totalPages = Math.ceil(total / limit);
 
-  return { reports, total, page, totalPages };
+  return { items: reports, total, page, totalPages };
 };
 
 export const resolveReport = async (reportId: string, moderatorId: string, resolution: string) => {

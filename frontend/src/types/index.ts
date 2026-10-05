@@ -88,8 +88,8 @@ export interface IVerificationLog {
   id: string;
   userId: string | Pick<IUser, 'displayName' | 'phoneNumber'>;
   verificationType?: 'adult' | 'minor';
-  selfiePath?: string;
-  verificationStatus: 'pending' | 'approved' | 'rejected';
+  selfieUrl?: string;
+  verificationStatus: 'pending_review' | 'pending' | 'approved' | 'rejected';
   manualReviewReason?: string;
   createdAt: Date | string;
 }

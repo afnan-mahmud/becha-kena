@@ -1,3 +1,4 @@
+import React from 'react';
 import { Link } from 'react-router-dom';
 import { MapPin, BadgeCheck, Star } from 'lucide-react';
 import type { IListing } from '../../types';
@@ -8,15 +9,15 @@ interface ListingCardProps {
   listing: IListing;
 }
 
-export const ListingCard = ({ listing }: ListingCardProps) => {
+export const ListingCard = React.memo(({ listing }: ListingCardProps) => {
   const mainImage = listing.images && listing.images.length > 0 
     ? listing.images[0] 
     : 'https://via.placeholder.com/400x300?text=No+Image';
 
   return (
-    <Link to={`/listings/${listing.id}`} className="listing-card">
+    <Link to={`/listings/${listing.id}`} className="listing-card" aria-label={`View details for ${listing.title}`}>
       <div className="card-image-wrapper">
-        <img src={mainImage} alt={listing.title} loading="lazy" />
+        <img src={mainImage} alt={`${listing.title} - photo 1`} loading="lazy" />
         {listing.status === 'sold' && (
           <div className="sold-badge">বিক্রি হয়ে গেছে</div>
         )}
@@ -45,4 +46,4 @@ export const ListingCard = ({ listing }: ListingCardProps) => {
       </div>
     </Link>
   );
-};
+});

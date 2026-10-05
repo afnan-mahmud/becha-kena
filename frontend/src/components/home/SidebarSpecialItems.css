@@ -49,9 +49,21 @@
     flex-direction: row;
     overflow-x: auto;
     padding-bottom: var(--space-md);
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+  }
+  .sidebar-container::-webkit-scrollbar {
+    display: none;
   }
   .sidebar-widget {
     min-width: 300px;
     flex: 1;
+    scroll-snap-align: start;
+  }
+}
+
+@media (max-width: 768px) {
+  .sidebar-widget {
+    min-width: 250px;
   }
 }

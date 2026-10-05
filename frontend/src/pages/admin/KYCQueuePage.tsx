@@ -130,7 +130,7 @@ export const KYCQueuePage = () => {
                         <button 
                           className="action-btn btn-view"
                           title="সেলফি দেখুন"
-                          onClick={() => handleViewSelfie(log.selfiePath)}
+                          onClick={() => handleViewSelfie(log.selfieUrl)}
                           disabled={viewingSelfie === 'loading'}
                         >
                           <UserSearch size={18} />

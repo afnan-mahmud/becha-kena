@@ -1,13 +1,16 @@
+import { useState } from 'react';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
-import { Search, Menu, ShoppingBag, User, LogOut, MessageCircle, Settings, FileText, CheckCircle, PlusCircle, Globe } from 'lucide-react';
+import { Search, Menu, ShoppingBag, User, LogOut, MessageCircle, Settings, FileText, CheckCircle, PlusCircle, Globe, X } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import { useUiStore } from '../../store/uiStore';
+import { logout } from '../../services/auth.service';
 import './Header.css';
 
 export const Header = () => {
   const navigate = useNavigate();
   const { user, isAuthenticated, isVerified, clearUser } = useAuthStore();
   const { toggleMobileMenu } = useUiStore();
+  const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
 
   const handlePostAd = () => {
     if (!isAuthenticated) {
@@ -19,6 +22,17 @@ export const Header = () => {
       return;
     }
     navigate('/listings/create');
+  };
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+    } catch (error) {
+      console.error('Logout failed:', error);
+    } finally {
+      clearUser();
+      navigate('/');
+    }
   };
 
   return (
@@ -101,12 +115,20 @@ export const Header = () => {
                 <NavLink to="/profile/settings" className={({ isActive }) => `dropdown-item ${isActive ? 'text-primary bg-blue-50 font-medium' : ''}`}>
                   <Settings size={16} /> Settings
                 </NavLink>
-                <button onClick={clearUser} className="dropdown-item logout-btn">
+                <button onClick={handleLogout} className="dropdown-item logout-btn">
                   <LogOut size={16} /> Logout
                 </button>
               </div>
             </div>
           )}
+
+          <button 
+            className="mobile-search-toggle" 
+            onClick={() => setIsMobileSearchOpen(!isMobileSearchOpen)}
+            aria-label="Toggle search"
+          >
+            {isMobileSearchOpen ? <X size={20} /> : <Search size={20} />}
+          </button>
 
           <button onClick={handlePostAd} className="post-ad-btn">
             <PlusCircle size={18} />
@@ -114,6 +136,25 @@ export const Header = () => {
           </button>
         </div>
       </div>
+
+      {/* Mobile Search Overlay */}
+      {isMobileSearchOpen && (
+        <div className="mobile-search-overlay">
+          <div className="container">
+            <div className="header-search mobile-search-active">
+              <input 
+                type="text" 
+                placeholder="আপনি কি খুঁজছেন?" 
+                className="search-input"
+                autoFocus
+              />
+              <button className="search-button" aria-label="Search">
+                <Search size={20} />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </header>
   );
 };

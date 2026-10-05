@@ -1,5 +1,23 @@
 import api from '../api/axios';
-import type { ApiResponse, IListing, IReport, IVerificationLog, PaginatedResponse } from '../types';
+import type { ApiResponse, IUser, IListing, IReport, IVerificationLog, PaginatedResponse } from '../types';
+
+export interface DashboardStats {
+  pendingListings: number;
+  pendingKYC: number;
+  pendingReports: number;
+  activeUsers: number;
+  activeListings: number;
+}
+
+export const getDashboardStats = async (): Promise<ApiResponse<DashboardStats>> => {
+  const response = await api.get<ApiResponse<DashboardStats>>('/admin/stats');
+  return response.data;
+};
+
+export const getUsers = async (page?: number): Promise<PaginatedResponse<IUser>> => {
+  const response = await api.get<PaginatedResponse<IUser>>('/admin/users', { params: { page } });
+  return response.data;
+};
 
 export const getModerationQueue = async (page?: number): Promise<PaginatedResponse<IListing>> => {
   const response = await api.get<PaginatedResponse<IListing>>('/admin/moderation/listings', { params: { page } });

@@ -1,5 +1,6 @@
 import { useState, useRef, type ChangeEvent, type DragEvent, type Dispatch, type SetStateAction } from 'react';
 import { Upload, X, AlertCircle } from 'lucide-react';
+import { getPresignedUrl, uploadFileToS3 } from '../../services/media.service';
 import './ImageUploader.css';
 
 export interface ImageFile {
@@ -60,42 +61,55 @@ export const ImageUploader = ({ maxFiles = 5, images, onImagesChange }: ImageUpl
     });
   };
 
-  const simulateUpload = (imageFile: ImageFile) => {
-    let progress = 0;
-    const interval = setInterval(() => {
-      progress += Math.random() * 20 + 10;
-      
-      if (progress >= 100) {
-        progress = 100;
-        clearInterval(interval);
-        
-        onImagesChange(prev => {
-          const newArr = [...prev];
-          // We find by previewUrl since index might shift if user deletes while uploading
-          const currentIdx = newArr.findIndex(img => img.previewUrl === imageFile.previewUrl);
-          if (currentIdx !== -1) {
-            newArr[currentIdx] = {
-              ...newArr[currentIdx],
-              progress: 100,
-              uploadedUrl: newArr[currentIdx].previewUrl // Mock uploaded URL
-            };
-          }
-          return newArr;
-        });
-      } else {
-        onImagesChange(prev => {
-          const newArr = [...prev];
-          const currentIdx = newArr.findIndex(img => img.previewUrl === imageFile.previewUrl);
-          if (currentIdx !== -1) {
-            newArr[currentIdx] = {
-              ...newArr[currentIdx],
-              progress
-            };
-          }
-          return newArr;
-        });
-      }
-    }, 300);
+  const simulateUpload = async (imageFile: ImageFile) => {
+    try {
+      const response = await getPresignedUrl(imageFile.file.name, imageFile.file.type, 'listings');
+      const { uploadUrl, fileUrl } = response.data;
+
+      // Fake progress while uploading
+      let progress = 0;
+      const progressInterval = setInterval(() => {
+        progress += 15;
+        if (progress < 90) {
+          onImagesChange(prev => {
+            const newArr = [...prev];
+            const currentIdx = newArr.findIndex(img => img.previewUrl === imageFile.previewUrl);
+            if (currentIdx !== -1) {
+              newArr[currentIdx] = { ...newArr[currentIdx], progress };
+            }
+            return newArr;
+          });
+        }
+      }, 300);
+
+      await uploadFileToS3(uploadUrl, imageFile.file);
+      clearInterval(progressInterval);
+
+      onImagesChange(prev => {
+        const newArr = [...prev];
+        const currentIdx = newArr.findIndex(img => img.previewUrl === imageFile.previewUrl);
+        if (currentIdx !== -1) {
+          newArr[currentIdx] = {
+            ...newArr[currentIdx],
+            progress: 100,
+            uploadedUrl: fileUrl
+          };
+        }
+        return newArr;
+      });
+    } catch (error) {
+      onImagesChange(prev => {
+        const newArr = [...prev];
+        const currentIdx = newArr.findIndex(img => img.previewUrl === imageFile.previewUrl);
+        if (currentIdx !== -1) {
+          newArr[currentIdx] = {
+            ...newArr[currentIdx],
+            error: 'Upload Failed'
+          };
+        }
+        return newArr;
+      });
+    }
   };
 
   const handleDrop = (e: DragEvent<HTMLDivElement>) => {

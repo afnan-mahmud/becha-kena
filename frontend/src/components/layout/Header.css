@@ -21,7 +21,11 @@
   border: none;
   color: var(--color-bg-white);
   cursor: pointer;
-  padding: var(--space-xs);
+  padding: 10px; /* Touch target minimum 44px */
+}
+
+.mobile-search-toggle {
+  display: none;
 }
 
 .header-logo {
@@ -159,15 +163,33 @@
   position: absolute;
   top: 100%;
   right: 0;
-  margin-top: var(--space-xs);
-  background-color: var(--color-bg-white);
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow-lg);
+  padding-top: var(--space-xs);
+  background-color: transparent;
   width: 220px;
   display: none;
   flex-direction: column;
-  padding: var(--space-xs) 0;
   z-index: var(--z-dropdown);
+}
+
+.user-dropdown::after {
+  content: '';
+  position: absolute;
+  top: var(--space-xs);
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: var(--color-bg-white);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  z-index: -1;
+}
+
+.user-dropdown .dropdown-item {
+  z-index: 1;
+}
+
+.user-dropdown .dropdown-item:first-child {
+  margin-top: var(--space-xs);
 }
 
 .user-menu:hover .user-dropdown {
@@ -244,19 +266,43 @@
   }
   
   .mobile-menu-toggle {
-    display: block;
-  }
-  
-  .header-search {
-    display: none; /* Collapse search on mobile, will be handled differently per prompt */
-  }
-  
-  .lang-toggle, .user-menu-btn span, .login-btn span, .post-ad-btn span {
     display: none;
   }
   
-  .post-ad-btn {
-    padding: var(--space-sm);
-    border-radius: 50%;
+  .header-search {
+    display: none;
+  }
+  
+  .header-search.mobile-search-active {
+    display: flex;
+    width: 100%;
+    margin-top: 10px;
+    margin-bottom: 10px;
+  }
+  
+  .mobile-search-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: none;
+    border: none;
+    color: var(--color-bg-white);
+    padding: var(--space-xs);
+    cursor: pointer;
+  }
+  
+  .mobile-search-overlay {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    width: 100%;
+    background-color: var(--color-primary);
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: var(--shadow-md);
+    z-index: var(--z-dropdown);
+  }
+  
+  .lang-toggle, .user-menu, .login-btn, .post-ad-btn {
+    display: none;
   }
 }

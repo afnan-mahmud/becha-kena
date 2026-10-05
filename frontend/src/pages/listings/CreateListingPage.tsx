@@ -13,12 +13,16 @@ import {
   Utensils, 
   Plane, 
   Dumbbell, 
-  MoreHorizontal
+  MoreHorizontal,
+  ChevronRight,
+  ChevronLeft,
+  CheckCircle
 } from 'lucide-react';
 import { StepIndicator } from '../../components/common/StepIndicator';
 import { ImageUploader, type ImageFile } from '../../components/common/ImageUploader';
 import { DIVISIONS, DISTRICTS, THANAS } from '../../utils/locations';
 import { ListingCategory, ListingCondition } from '../../types';
+import { createListing } from '../../services/listing.service';
 import './CreateListingPage.css';
 
 // Icons mapping for categories
@@ -105,15 +109,37 @@ export const CreateListingPage = () => {
     setIsSubmitting(true);
     
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      const conditionMap: Record<string, 'new' | 'like_new' | 'used'> = {
+        [ListingCondition.New]: 'new',
+        [ListingCondition.LikeNew]: 'like_new',
+        [ListingCondition.Used]: 'used',
+      };
+
+      const payload = {
+        ...data,
+        price: Number(data.price),
+        condition: conditionMap[data.condition] || 'used',
+        images: images.map(i => i.uploadedUrl).filter(Boolean) as string[],
+        location: {
+          type: 'Point' as const,
+          coordinates: [90.4125, 23.8103] as [number, number], // Default coords for Dhaka
+          division: data.division,
+          district: data.district,
+          thana: data.thana,
+          addressLine: data.addressLine
+        }
+      };
       
-      console.log('Submitting data:', { ...data, images: images.map(i => i.uploadedUrl) });
+      const response = await createListing(payload);
       
-      toast.success('আপনার বিজ্ঞাপন পোস্ট করা হয়েছে এবং পর্যালোচনার অপেক্ষায় আছে।');
-      navigate('/dashboard/my-listings'); // Redirect to my listings
-    } catch (error) {
-      toast.error('বিজ্ঞাপন পোস্ট করতে সমস্যা হয়েছে। আবার চেষ্টা করুন।');
+      if (response.success) {
+        toast.success('আপনার বিজ্ঞাপন পোস্ট করা হয়েছে এবং পর্যালোচনার অপেক্ষায় আছে।');
+        navigate('/dashboard/my-listings'); // Redirect to my listings
+      } else {
+        toast.error(response.message || 'বিজ্ঞাপন পোস্ট করতে সমস্যা হয়েছে। আবার চেষ্টা করুন।');
+      }
+    } catch (error: any) {
+      toast.error(error.message || 'বিজ্ঞাপন পোস্ট করতে সমস্যা হয়েছে। আবার চেষ্টা করুন।');
     } finally {
       setIsSubmitting(false);
     }
@@ -173,7 +199,9 @@ export const CreateListingPage = () => {
               </div>
 
               <div className="form-actions right">
-                <button type="button" className="btn btn-primary" onClick={nextStep}>পরবর্তী</button>
+                <button type="button" className="btn btn-primary" onClick={nextStep}>
+                  পরবর্তী <ChevronRight size={20} />
+                </button>
               </div>
             </div>
           )}
@@ -235,8 +263,12 @@ export const CreateListingPage = () => {
               </div>
 
               <div className="form-actions space-between">
-                <button type="button" className="btn btn-outline" onClick={prevStep}>আগের ধাপ</button>
-                <button type="button" className="btn btn-primary" onClick={nextStep}>পরবর্তী</button>
+                <button type="button" className="btn btn-outline" onClick={prevStep}>
+                  <ChevronLeft size={20} /> আগের ধাপ
+                </button>
+                <button type="button" className="btn btn-primary" onClick={nextStep}>
+                  পরবর্তী <ChevronRight size={20} />
+                </button>
               </div>
             </div>
           )}
@@ -255,8 +287,12 @@ export const CreateListingPage = () => {
               </div>
 
               <div className="form-actions space-between mt-5">
-                <button type="button" className="btn btn-outline" onClick={prevStep}>আগের ধাপ</button>
-                <button type="button" className="btn btn-primary" onClick={nextStep}>পরবর্তী</button>
+                <button type="button" className="btn btn-outline" onClick={prevStep}>
+                  <ChevronLeft size={20} /> আগের ধাপ
+                </button>
+                <button type="button" className="btn btn-primary" onClick={nextStep}>
+                  পরবর্তী <ChevronRight size={20} />
+                </button>
               </div>
             </div>
           )}
@@ -352,9 +388,12 @@ export const CreateListingPage = () => {
               </div>
 
               <div className="form-actions space-between mt-5">
-                <button type="button" className="btn btn-outline" onClick={prevStep} disabled={isSubmitting}>আগের ধাপ</button>
+                <button type="button" className="btn btn-outline" onClick={prevStep} disabled={isSubmitting}>
+                  <ChevronLeft size={20} /> আগের ধাপ
+                </button>
                 <button type="submit" className="btn btn-primary" disabled={isSubmitting}>
                   {isSubmitting ? 'প্রসেস হচ্ছে...' : 'বিজ্ঞাপন পোস্ট করুন'}
+                  {!isSubmitting && <CheckCircle size={20} />}
                 </button>
               </div>
             </div>

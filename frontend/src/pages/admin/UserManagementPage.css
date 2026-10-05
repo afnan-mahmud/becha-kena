@@ -1,0 +1,186 @@
+.user-management {
+  background-color: var(--color-bg-white);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+
+.user-table-container {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.user-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.user-table th,
+.user-table td {
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.user-table th {
+  background-color: var(--color-bg-alt);
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  font-size: 0.875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.user-table tr:hover td {
+  background-color: var(--color-bg-hover);
+}
+
+.user-table td {
+  vertical-align: middle;
+}
+
+.user-role-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.5rem;
+  border-radius: var(--radius-full);
+  font-size: 0.75rem;
+  font-weight: 500;
+  text-transform: capitalize;
+}
+
+.role-admin {
+  background-color: var(--color-danger-light);
+  color: var(--color-danger);
+}
+
+.role-moderator {
+  background-color: var(--color-warning-light);
+  color: var(--color-warning-dark);
+}
+
+.role-user {
+  background-color: var(--color-primary-light);
+  color: var(--color-primary);
+}
+
+.user-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.25rem 0.625rem;
+  border-radius: var(--radius-full);
+  font-size: 0.75rem;
+  font-weight: 500;
+  text-transform: capitalize;
+}
+
+.status-active {
+  background-color: var(--color-success-light);
+  color: var(--color-success);
+}
+
+.status-suspended {
+  background-color: var(--color-warning-light);
+  color: var(--color-warning-dark);
+}
+
+.status-banned {
+  background-color: var(--color-danger-light);
+  color: var(--color-danger);
+}
+
+.verified-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  color: var(--color-success);
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.unverified-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  color: var(--color-text-tertiary);
+  font-size: 0.875rem;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.action-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: var(--radius-md);
+  border: none;
+  background: none;
+  cursor: pointer;
+  transition: var(--transition-colors);
+}
+
+.btn-ban {
+  color: var(--color-text-secondary);
+}
+
+.btn-ban:hover {
+  background-color: var(--color-danger-light);
+  color: var(--color-danger);
+}
+
+.btn-ban:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 3rem;
+  color: var(--color-text-secondary);
+  font-size: 1rem;
+}
+
+/* Ban Modal Styles */
+.ban-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: var(--z-modal);
+}
+
+.ban-modal {
+  background-color: var(--color-bg-white);
+  padding: 1.5rem;
+  border-radius: var(--radius-lg);
+  width: 90%;
+  max-width: 400px;
+  box-shadow: var(--shadow-xl);
+}
+
+.ban-textarea {
+  width: 100%;
+  min-height: 100px;
+  padding: 0.75rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  margin-bottom: 1.5rem;
+  resize: vertical;
+}
+
+.ban-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+}

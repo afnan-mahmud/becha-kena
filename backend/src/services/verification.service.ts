@@ -38,31 +38,9 @@ export const submitAdultVerification = async (
 
   attemptsToday += 1;
 
-  // Mock Porichoy API call
-  const porichoyResponse = { success: true, name: 'John Doe', timeout: false };
-  // Mock AWS Rekognition CompareFaces
-  const faceMatchSuccess = true;
-  
-  let verificationStatus: 'pending_review' | 'approved' | 'rejected' = 'approved';
-  let manualReviewReason: string | null = null;
+  let verificationStatus: 'pending_review' | 'approved' | 'rejected' = 'pending_review';
+  let manualReviewReason: string | null = 'Manual verification required';
   let verifiedName: string | null = null;
-
-  if (porichoyResponse.timeout || !porichoyResponse.success) {
-    manualReviewReason = porichoyResponse.timeout ? 'timeout_fallback' : 'porichoy_error';
-    verificationStatus = 'pending_review';
-  } else {
-    verifiedName = porichoyResponse.name;
-    
-    if (!faceMatchSuccess) {
-      if (attemptsToday >= 3) {
-        manualReviewReason = 'face_match_failed_3x';
-        verificationStatus = 'pending_review';
-      } else {
-        verificationStatus = 'rejected';
-        manualReviewReason = 'face_match_failed';
-      }
-    }
-  }
 
   const session = await mongoose.startSession();
   session.startTransaction();
@@ -81,7 +59,7 @@ export const submitAdultVerification = async (
     
     await newLog.save({ session });
 
-    if (verificationStatus === 'approved') {
+    if ((verificationStatus as string) === 'approved') {
       await User.findByIdAndUpdate(
         userId,
         {
@@ -96,7 +74,7 @@ export const submitAdultVerification = async (
     await session.commitTransaction();
     session.endSession();
     
-    if (verificationStatus === 'pending_review' && manualReviewReason === 'timeout_fallback') {
+    if (verificationStatus === 'pending_review') {
       return 'Sent to manual review';
     }
     
@@ -151,31 +129,9 @@ export const submitMinorVerification = async (
 
   attemptsToday += 1;
 
-  // Mock Porichoy API call
-  const porichoyResponse = { success: true, name: 'Parent Name', timeout: false }; 
-  // Mock AWS Rekognition CompareFaces
-  const faceMatchSuccess = true;
-  
-  let verificationStatus: 'pending_review' | 'approved' | 'rejected' = 'approved';
-  let manualReviewReason: string | null = null;
+  let verificationStatus: 'pending_review' | 'approved' | 'rejected' = 'pending_review';
+  let manualReviewReason: string | null = 'Manual verification required';
   let verifiedName: string | null = null;
-
-  if (porichoyResponse.timeout || !porichoyResponse.success) {
-    manualReviewReason = porichoyResponse.timeout ? 'timeout_fallback' : 'porichoy_error';
-    verificationStatus = 'pending_review';
-  } else {
-    verifiedName = porichoyResponse.name;
-    
-    if (!faceMatchSuccess) {
-      if (attemptsToday >= 3) {
-        manualReviewReason = 'face_match_failed_3x';
-        verificationStatus = 'pending_review';
-      } else {
-        verificationStatus = 'rejected';
-        manualReviewReason = 'face_match_failed';
-      }
-    }
-  }
 
   const session = await mongoose.startSession();
   session.startTransaction();
@@ -194,7 +150,7 @@ export const submitMinorVerification = async (
     
     await newLog.save({ session });
 
-    if (verificationStatus === 'approved') {
+    if ((verificationStatus as string) === 'approved') {
       const minorTransitionDueDate = new Date(dob);
       minorTransitionDueDate.setFullYear(minorTransitionDueDate.getFullYear() + 18);
       minorTransitionDueDate.setDate(minorTransitionDueDate.getDate() + 30);
@@ -214,7 +170,7 @@ export const submitMinorVerification = async (
     await session.commitTransaction();
     session.endSession();
     
-    if (verificationStatus === 'pending_review' && manualReviewReason === 'timeout_fallback') {
+    if (verificationStatus === 'pending_review') {
       return 'Sent to manual review';
     }
     

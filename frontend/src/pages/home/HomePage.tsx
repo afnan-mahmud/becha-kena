@@ -6,11 +6,16 @@ import { PromoBanner } from '../../components/home/PromoBanner';
 import { CategorySection } from '../../components/home/CategorySection';
 import { SidebarSpecialItems } from '../../components/home/SidebarSpecialItems';
 import { Shirt, Smartphone, Monitor } from 'lucide-react';
+import { SEOHead } from '../../components/common/SEOHead';
 import './HomePage.css';
 
 export const HomePage = () => {
   return (
     <div className="home-page container">
+      <SEOHead 
+        title="Becha-Kena — বাংলাদেশের সবচেয়ে নিরাপদ সেকেন্ড-হ্যান্ড মার্কেটপ্লেস" 
+        description="বেচা-কেনা — বাংলাদেশের সবচেয়ে নিরাপদ সেকেন্ড-হ্যান্ড মার্কেটপ্লেস। ১০০% ভেরিফাইড ইউজার। NID যাচাই ছাড়া কেনা-বেচা নয়।"
+      />
       <HeroBanner />
       <TrustBar />
       <CategoryCircles />
