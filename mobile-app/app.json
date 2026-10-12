@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "mobilea-app",
-    "slug": "mobilea-app",
+    "name": "mobile-app",
+    "slug": "mobile-app",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "mobileaapp",
+    "scheme": "mobileapp",
     "userInterfaceStyle": "automatic",
     "ios": {
       "icon": "./assets/expo.icon"

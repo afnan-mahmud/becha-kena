@@ -2,7 +2,7 @@
 
 > **Tech Stack:** Expo SDK 57 + React Native 0.86 + TypeScript + Expo Router (File-based routing)
 > **Backend:** Express.js (already built) — Base URL: `/api/v1`
-> **Setup Folder:** `mobilea-app/`
+> **Setup Folder:** `mobile-app/`
 > **Follow this step-by-step prompt guide to build a production-ready mobile app from scratch (0 to production).**
 
 ---
@@ -34,7 +34,7 @@
 ### ✅ Prompt 1 — Project Cleanup & Folder Structure Setup
 
 ```
-Set up a clean project structure in the `mobilea-app/` folder for our Becha-Kena mobile app. We have an existing Expo SDK 57 + React Native 0.86 + TypeScript + Expo Router project.
+Set up a clean project structure in the `mobile-app/` folder for our Becha-Kena mobile app. We have an existing Expo SDK 57 + React Native 0.86 + TypeScript + Expo Router project.
 
 Remove the current default boilerplate files (explore.tsx, animated-icon, hint-row, etc.) and create the following production-grade folder structure:
 
@@ -1986,7 +1986,7 @@ eas submit --profile production --platform all
 
 ```bash
 # Navigate to mobile app folder
-cd mobilea-app
+cd mobile-app
 
 # Core dependencies (most already installed)
 npx expo install expo-secure-store @react-native-async-storage/async-storage
