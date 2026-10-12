@@ -1,67 +1,48 @@
 import { NavLink, useNavigate } from 'react-router-dom';
-import { Home, Grid, PlusCircle, MessageCircle, User } from 'lucide-react';
+import { Home, Search, Plus, MessageCircle, User } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
+import { useRequireVerified } from '../../hooks/useAuth';
+import { useUnreadCount } from '../../hooks/useUnreadCount';
+import { formatNumber } from '../../utils/formatters';
 import './MobileBottomNav.css';
 
 export const MobileBottomNav = () => {
-  const { isAuthenticated, isVerified } = useAuthStore();
+  const { isAuthenticated } = useAuthStore();
   const navigate = useNavigate();
+  const requireVerified = useRequireVerified();
+  const unread = useUnreadCount();
 
-  const handlePostAd = (e: React.MouseEvent) => {
-    e.preventDefault();
-    if (!isAuthenticated) {
-      navigate('/login?redirect=/listings/create');
-      return;
-    }
-    if (!isVerified) {
-      navigate('/verify');
-      return;
-    }
-    navigate('/listings/create');
+  const go = (path: string) => () => {
+    if (requireVerified(path)) navigate(path);
   };
 
   return (
-    <nav className="mobile-bottom-nav">
-      <NavLink 
-        to="/" 
-        className={({ isActive }) => `bottom-nav-item ${isActive ? 'active' : ''}`}
-        end
-      >
-        <Home size={24} />
+    <nav className="bottom-nav" aria-label="মোবাইল নেভিগেশন">
+      <NavLink to="/" end className="bottom-nav__item">
+        <Home size={22} />
         <span>হোম</span>
       </NavLink>
 
-      <NavLink 
-        to="/listings" 
-        className={({ isActive }) => `bottom-nav-item ${isActive ? 'active' : ''}`}
-      >
-        <Grid size={24} />
-        <span>ক্যাটেগরি</span>
+      <NavLink to="/listings" className="bottom-nav__item">
+        <Search size={22} />
+        <span>খুঁজুন</span>
       </NavLink>
 
-      <div className="bottom-nav-item post-ad-container" onClick={handlePostAd}>
-        <div className="post-ad-fab">
-          <PlusCircle size={28} />
-        </div>
-        <span>পোস্ট করুন</span>
-      </div>
+      <button type="button" className="bottom-nav__item bottom-nav__post" onClick={go('/listings/create')}>
+        <span className="bottom-nav__fab"><Plus size={26} strokeWidth={2.5} /></span>
+        <span>বিজ্ঞাপন দিন</span>
+      </button>
 
-      <NavLink 
-        to="/chat" 
-        className={({ isActive }) => `bottom-nav-item ${isActive ? 'active' : ''}`}
-      >
-        <div className="icon-badge-container">
-          <MessageCircle size={24} />
-          <span className="badge">2</span>
-        </div>
-        <span>মেসেজ</span>
-      </NavLink>
+      <button type="button" className="bottom-nav__item" onClick={go('/chat')}>
+        <span className="bottom-nav__icon">
+          <MessageCircle size={22} />
+          {unread > 0 && <span className="bottom-nav__badge">{unread > 9 ? '৯+' : formatNumber(unread)}</span>}
+        </span>
+        <span>চ্যাট</span>
+      </button>
 
-      <NavLink 
-        to={isAuthenticated ? "/profile" : "/login"} 
-        className={({ isActive }) => `bottom-nav-item ${isActive ? 'active' : ''}`}
-      >
-        <User size={24} />
+      <NavLink to={isAuthenticated ? '/profile' : '/login'} className="bottom-nav__item">
+        <User size={22} />
         <span>{isAuthenticated ? 'প্রোফাইল' : 'লগইন'}</span>
       </NavLink>
     </nav>

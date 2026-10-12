@@ -20,21 +20,27 @@ export const KYCQueuePage = () => {
   });
 
   const resolveMutation = useMutation({
-    mutationFn: ({ id, action }: { id: string; action: 'approve' | 'reject' }) => 
-      resolveVerification(id, action),
+    mutationFn: ({ id, action, verifiedName, reason }: { id: string; action: 'approve' | 'reject'; verifiedName?: string; reason?: string }) =>
+      resolveVerification(id, action, { verifiedName, reason }),
     onSuccess: (_, variables) => {
       toast.success(`KYC ${variables.action === 'approve' ? 'অনুমোদিত' : 'বাতিল'} হয়েছে`);
       queryClient.invalidateQueries({ queryKey: ['kyc-queue'] });
     },
-    onError: () => {
-      toast.error('সমস্যা হয়েছে, আবার চেষ্টা করুন');
+    onError: (error: Error) => {
+      toast.error(error.message || 'সমস্যা হয়েছে, আবার চেষ্টা করুন');
     }
   });
 
   const handleResolve = (id: string, action: 'approve' | 'reject') => {
-    const actionText = action === 'approve' ? 'অনুমোদন' : 'বাতিল';
-    if (window.confirm(`আপনি কি এই KYC যাচাইকরণটি ${actionText} করতে চান?`)) {
-      resolveMutation.mutate({ id, action });
+    if (action === 'approve') {
+      // The legal name shown on profiles must match the NID card exactly
+      const verifiedName = window.prompt('NID কার্ডে লেখা আইনগত নাম লিখুন (যেমন: MD. RAHIM UDDIN):');
+      if (verifiedName === null) return;
+      resolveMutation.mutate({ id, action, verifiedName: verifiedName.trim() || undefined });
+    } else {
+      const reason = window.prompt('বাতিলের কারণ লিখুন (ইউজার দেখতে পাবে):');
+      if (reason === null) return;
+      resolveMutation.mutate({ id, action, reason: reason.trim() || undefined });
     }
   };
 
@@ -97,15 +103,15 @@ export const KYCQueuePage = () => {
                       {(log.userId as any).phoneNumber}
                     </td>
                     <td>
-                      <span className={`kyc-type-badge ${log.verificationType === 'adult' ? 'kyc-type-adult' : 'kyc-type-minor'}`}>
-                        {log.verificationType === 'adult' ? 'National ID' : 'Birth Certificate'}
+                      <span className={`kyc-type-badge ${log.verificationType === 'minor' ? 'kyc-type-minor' : 'kyc-type-adult'}`}>
+                        {log.verificationType === 'minor' ? 'অভিভাবকের NID (অপ্রাপ্তবয়স্ক)' : 'নিজের NID'}
                       </span>
                     </td>
                     <td>
                       {formatRelativeTime(log.createdAt)}
                     </td>
                     <td>
-                      <div className="kyc-reason" title={log.manualReviewReason}>
+                      <div className="kyc-reason" title={log.manualReviewReason || undefined}>
                         {log.manualReviewReason || 'Automated Check Failed'}
                       </div>
                     </td>

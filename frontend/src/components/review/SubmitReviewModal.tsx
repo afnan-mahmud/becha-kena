@@ -3,6 +3,7 @@ import { X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { StarRatingInput } from '../ui/StarRatingInput';
 import { submitReview } from '../../services/review.service';
+import { getErrorMessage } from '../../utils/formatters';
 
 import './SubmitReviewModal.css';
 
@@ -10,9 +11,11 @@ interface SubmitReviewModalProps {
   isOpen: boolean;
   onClose: () => void;
   listingId: string;
+  sellerName?: string;
+  listingTitle?: string;
 }
 
-export const SubmitReviewModal = ({ isOpen, onClose, listingId }: SubmitReviewModalProps) => {
+export const SubmitReviewModal = ({ isOpen, onClose, listingId, sellerName, listingTitle }: SubmitReviewModalProps) => {
   const [rating, setRating] = useState(0);
   const [reviewText, setReviewText] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -35,9 +38,8 @@ export const SubmitReviewModal = ({ isOpen, onClose, listingId }: SubmitReviewMo
       await submitReview({ listingId, rating, reviewText });
       toast.success('রিভিউ সফলভাবে জমা দেওয়া হয়েছে!');
       onClose();
-    } catch (error: any) {
-      const msg = error.response?.data?.message || 'রিভিউ জমা দিতে সমস্যা হয়েছে';
-      toast.error(msg);
+    } catch (error) {
+      toast.error(getErrorMessage(error, 'রিভিউ জমা দিতে সমস্যা হয়েছে'));
     } finally {
       setIsSubmitting(false);
     }
@@ -47,7 +49,10 @@ export const SubmitReviewModal = ({ isOpen, onClose, listingId }: SubmitReviewMo
     <div className="review-modal-overlay" onClick={onClose}>
       <div className="review-modal-container" onClick={e => e.stopPropagation()}>
         <div className="review-modal-header">
-          <h2>বিক্রেতাকে রিভিউ দিন</h2>
+          <div>
+            <h2>{sellerName ? `${sellerName}-কে রিভিউ দিন` : 'বিক্রেতাকে রিভিউ দিন'}</h2>
+            {listingTitle && <p className="text-sm text-muted" style={{ margin: 0 }}>পণ্য: {listingTitle}</p>}
+          </div>
           <button className="btn-close" onClick={onClose}>
             <X size={24} />
           </button>

@@ -1,37 +1,41 @@
 import { useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
-import { verifyOTP as verifyOTPApi, logout as logoutApi, requestOTP as requestOTPApi } from '../services/auth.service';
+import { logout as logoutApi } from '../services/auth.service';
 
-export const useAuth = () => {
-  const store = useAuthStore();
+export const useLogout = () => {
+  const clearUser = useAuthStore((s) => s.clearUser);
+  const navigate = useNavigate();
 
-  const login = useCallback(async (phoneNumber: string, otpCode: string) => {
-    const response = await verifyOTPApi(phoneNumber, otpCode);
-    if (response.success && response.data?.user) {
-      store.setUser(response.data.user);
-    }
-    return response;
-  }, [store]);
-
-  const logout = useCallback(async () => {
+  return useCallback(async () => {
     try {
       await logoutApi();
     } catch (error) {
       console.error('Logout failed on server', error);
     } finally {
-      store.clearUser();
-      window.location.href = '/';
+      clearUser();
+      navigate('/', { replace: true });
     }
-  }, [store]);
+  }, [clearUser, navigate]);
+};
 
-  const requestOTP = useCallback(async (phoneNumber: string) => {
-    return await requestOTPApi(phoneNumber);
-  }, []);
+/** Sends the user to login / KYC first when an action needs a verified account */
+export const useRequireVerified = () => {
+  const { isAuthenticated, isVerified } = useAuthStore();
+  const navigate = useNavigate();
 
-  return {
-    ...store,
-    login,
-    logout,
-    requestOTP,
-  };
+  return useCallback(
+    (redirectTo: string) => {
+      if (!isAuthenticated) {
+        navigate(`/login?redirect=${encodeURIComponent(redirectTo)}`);
+        return false;
+      }
+      if (!isVerified) {
+        navigate('/verify');
+        return false;
+      }
+      return true;
+    },
+    [isAuthenticated, isVerified, navigate]
+  );
 };

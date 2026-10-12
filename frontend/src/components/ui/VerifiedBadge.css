@@ -1,0 +1,14 @@
+.verified-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border-radius: var(--radius-full);
+  background: var(--color-primary-soft);
+  color: var(--color-primary-dark);
+  font-weight: 600;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+.verified-badge--sm { padding: 2px 8px; font-size: 11.5px; }
+.verified-badge--md { padding: 4px 10px; font-size: 13px; }

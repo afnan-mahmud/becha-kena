@@ -4,6 +4,7 @@ import { CheckCircle, XCircle, UserX, AlertTriangle } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { getReports, resolveReport, dismissReport, banUser } from '../../services/admin.service';
 import { formatRelativeTime } from '../../utils/formatters';
+import { getReportReasonLabel } from '../../utils/constants';
 import { Pagination } from '../../components/common/Pagination';
 import { useAuthStore } from '../../store/authStore';
 import './ReportManagementPage.css';
@@ -150,10 +151,14 @@ export const ReportManagementPage = () => {
                   </td>
                   <td>
                     <div className="target-type-badge">{report.targetType}</div>
-                    <div className="text-sm">ID: {report.targetId.slice(-6)}</div>
+                    <div className="text-sm">
+                      {typeof report.targetId === 'object'
+                        ? report.targetId.title || report.targetId.displayName || report.targetId.id
+                        : `ID: ${String(report.targetId).slice(-6)}`}
+                    </div>
                   </td>
                   <td>
-                    <div className="report-reason">{report.reason}</div>
+                    <div className="report-reason">{getReportReasonLabel(report.reason)}</div>
                     <div className="report-description" title={report.description}>
                       {report.description}
                     </div>
@@ -187,11 +192,11 @@ export const ReportManagementPage = () => {
                         </button>
                         
                         {/* Only Admin can ban */}
-                        {user?.role === 'admin' && report.targetType === 'user' && (
+                        {user?.role === 'admin' && report.targetType === 'User' && (
                           <button 
                             className="action-btn btn-ban"
                             title="ইউজার ব্যান করুন"
-                            onClick={() => setBanningUserId(report.targetId)}
+                            onClick={() => setBanningUserId(typeof report.targetId === 'object' ? report.targetId.id : report.targetId)}
                           >
                             <UserX size={18} />
                           </button>

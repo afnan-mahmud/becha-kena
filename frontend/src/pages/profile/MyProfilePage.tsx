@@ -1,185 +1,119 @@
 import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { AlertTriangle, Calendar, Edit, List, MessageSquare, Phone } from 'lucide-react';
+import { Pencil, List, MessageCircle, Flag, Phone, ShieldCheck, Plus } from 'lucide-react';
 import toast from 'react-hot-toast';
-
 import { useAuthStore } from '../../store/authStore';
+import { useLogout } from '../../hooks/useAuth';
 import { getReviewsForUser } from '../../services/review.service';
+import { getMyListings } from '../../services/listing.service';
 import { deleteAccount } from '../../services/user.service';
-import { logout } from '../../services/auth.service';
-import { formatDate } from '../../utils/formatters';
-
-import { UserAvatar } from '../../components/ui/UserAvatar';
-import { VerifiedBadge } from '../../components/ui/VerifiedBadge';
-import { RatingStars } from '../../components/ui/RatingStars';
 import { ReviewCard } from '../../components/ui/ReviewCard';
 import { ConfirmModal } from '../../components/common/ConfirmModal';
 import { LoadingSpinner } from '../../components/common/LoadingSpinner';
-
+import { SEOHead } from '../../components/common/SEOHead';
+import { formatNumber, getErrorMessage, maskPhone } from '../../utils/formatters';
+import { ProfileHeader } from './ProfileHeader';
 import './MyProfilePage.css';
 
 export const MyProfilePage = () => {
   const { user, clearUser } = useAuthStore();
-  const navigate = useNavigate();
-  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const logout = useLogout();
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
 
-  const { data: reviewsData, isLoading: reviewsLoading } = useQuery({
-    queryKey: ['my-reviews', user?.id],
-    queryFn: () => getReviewsForUser(user!.id, 1),
-    enabled: !!user?.id
+  const { data: reviewsData } = useQuery({
+    queryKey: ['reviews', user?.id],
+    queryFn: () => getReviewsForUser(user!.id),
+    enabled: !!user?.id,
   });
 
-  const reviews = reviewsData?.data?.items || [];
+  const { data: activeData } = useQuery({ queryKey: ['my-listings', 'active', 'count'], queryFn: () => getMyListings('active', 1, 1), enabled: !!user });
+  const { data: soldData } = useQuery({ queryKey: ['my-listings', 'sold', 'count'], queryFn: () => getMyListings('sold', 1, 1), enabled: !!user });
 
-  // Safely fallback if user isn't loaded yet
-  if (!user) {
-    return <LoadingSpinner fullScreen />;
-  }
+  if (!user) return <LoadingSpinner fullScreen />;
+
+  const reviews = reviewsData?.data?.reviews || [];
 
   const handleDeleteAccount = async () => {
     try {
       await deleteAccount();
-      toast.success('আপনার অ্যাকাউন্ট ডিলিট করা হয়েছে।');
       clearUser();
-      navigate('/');
+      toast.success('অ্যাকাউন্ট মুছে ফেলার অনুরোধ নেওয়া হয়েছে। ৩০ দিনের মধ্যে লগইন করলে অনুরোধ বাতিল হবে।', { duration: 6000 });
+      window.location.href = '/';
     } catch (error) {
-      toast.error('সমস্যা হয়েছে। আবার চেষ্টা করুন।');
+      toast.error(getErrorMessage(error));
     }
-  };
-
-  const handleLogout = async () => {
-    try {
-      await logout();
-    } catch (error) {
-      console.error('Logout failed:', error);
-    } finally {
-      clearUser();
-      navigate('/');
-    }
-  };
-
-  const maskPhone = (phone: string) => {
-    if (!phone) return '';
-    return phone.replace(/(\d{3})\d{4}(\d{4})/, '$1****$2');
   };
 
   return (
-    <div className="profile-page container">
-      <div className="profile-header-card">
-        <UserAvatar name={user.displayName || 'U'} size="xl" />
-        
-        <h1 className="profile-name">
-          {user.displayName || 'নামহীন ব্যবহারকারী'}
-          {user.isVerified && <VerifiedBadge size="md" />}
-        </h1>
-        
-        {user.verifiedName && (
-          <div className="verified-name-text">আইনত যাচাইকৃত নাম: {user.verifiedName}</div>
-        )}
+    <div className="profile container">
+      <SEOHead title="আমার প্রোফাইল — বেচা-কেনা" />
 
-        <div className="profile-meta-row">
-          <div className="profile-meta-item">
-            <RatingStars rating={user.averageRating} count={user.totalReviews} showCount />
-          </div>
-          <div className="profile-meta-item">
-            <Calendar size={16} />
-            <span>সদস্য: {formatDate(user.createdAt)}</span>
-          </div>
-          <div className="profile-meta-item">
-            <Phone size={16} />
-            <span>{maskPhone(user.phoneNumber)}</span>
-          </div>
+      <ProfileHeader
+        name={user.displayName || ''}
+        isVerified={user.isVerified}
+        verifiedName={user.verifiedName}
+        averageRating={user.averageRating}
+        totalReviews={user.totalReviews}
+        createdAt={user.createdAt}
+        extra={<span><Phone size={15} /> {maskPhone(user.phoneNumber)}</span>}
+        actions={<Link to="/profile/edit" className="btn btn-outline btn-sm"><Pencil size={15} /> এডিট</Link>}
+      />
+
+      {!user.isVerified && (
+        <div className="profile-alert">
+          <ShieldCheck size={22} />
+          <span>আপনার অ্যাকাউন্ট এখনো যাচাই হয়নি। বিজ্ঞাপন দিতে ও চ্যাট করতে NID দিয়ে যাচাই করুন।</span>
+          <Link to="/verify" className="btn btn-secondary btn-sm">এখনই যাচাই করুন</Link>
         </div>
+      )}
 
-        {!user.isVerified && (
-          <div className="verification-warning">
-            <div className="verification-warning-text">
-              <AlertTriangle size={20} />
-              <span>আপনার অ্যাকাউন্ট যাচাই করা হয়নি। বিজ্ঞাপন দিতে ও চ্যাট করতে যাচাই করুন।</span>
-            </div>
-            <Link to="/verify" className="btn btn-warning btn-sm">এখনই যাচাই করুন</Link>
-          </div>
-        )}
+      <div className="stats-grid">
+        <div className="stat-tile"><strong>{formatNumber(activeData?.data?.total ?? 0)}</strong><span>সক্রিয় বিজ্ঞাপন</span></div>
+        <div className="stat-tile"><strong>{formatNumber(soldData?.data?.total ?? 0)}</strong><span>বিক্রিত</span></div>
+        <div className="stat-tile"><strong>{formatNumber(user.totalReviews)}</strong><span>রিভিউ</span></div>
+        <div className="stat-tile"><strong>{user.averageRating.toFixed(1)}</strong><span>গড় রেটিং</span></div>
       </div>
 
-      <div className="profile-stats-grid">
-        <div className="stat-card">
-          <div className="stat-value">--</div>
-          <div className="stat-label">সক্রিয় বিজ্ঞাপন</div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-value">--</div>
-          <div className="stat-label">বিক্রিত আইটেম</div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-value">{user.totalReviews}</div>
-          <div className="stat-label">মোট রিভিউ</div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-value">{user.averageRating.toFixed(1)}</div>
-          <div className="stat-label">গড় রেটিং</div>
-        </div>
+      <div className="quick-links">
+        <Link to="/dashboard/my-listings" className="quick-link"><span className="quick-link__icon"><List size={18} /></span> আমার বিজ্ঞাপন</Link>
+        <Link to="/listings/create" className="quick-link"><span className="quick-link__icon"><Plus size={18} /></span> নতুন বিজ্ঞাপন</Link>
+        {user.isVerified && <Link to="/chat" className="quick-link"><span className="quick-link__icon"><MessageCircle size={18} /></span> মেসেজ</Link>}
+        <Link to="/profile/reports" className="quick-link"><span className="quick-link__icon"><Flag size={18} /></span> আমার রিপোর্ট</Link>
       </div>
 
-      <div className="profile-actions">
-        <Link to="/profile/edit" className="btn btn-primary flex-center gap-1">
-          <Edit size={18} /> প্রোফাইল সম্পাদনা
-        </Link>
-        <Link to="/dashboard/my-listings" className="btn btn-outline flex-center gap-1">
-          <List size={18} /> আমার বিজ্ঞাপন
-        </Link>
-        <Link to="/chat" className="btn btn-outline flex-center gap-1">
-          <MessageSquare size={18} /> মেসেজ
-        </Link>
-      </div>
-
-      <div className="recent-reviews">
-        <h2 className="section-title">সাম্প্রতিক রিভিউ</h2>
-        {reviewsLoading ? (
-          <LoadingSpinner />
-        ) : reviews.length > 0 ? (
+      <section>
+        <div className="section-head">
+          <h2>আমার পাওয়া রিভিউ</h2>
+          {reviews.length > 0 && <Link to={`/user/${user.id}`} className="section-link">পাবলিক প্রোফাইল দেখুন</Link>}
+        </div>
+        {reviews.length > 0 ? (
           <div className="reviews-list">
-            {reviews.slice(0, 3).map(review => (
-              <ReviewCard key={review.id} review={review} />
-            ))}
-            {reviews.length > 3 && (
-              <div style={{ textAlign: 'center', marginTop: '1rem' }}>
-                <Link to={`/user/${user.id}`} className="text-link">সব রিভিউ দেখুন</Link>
-              </div>
-            )}
+            {reviews.slice(0, 4).map((review) => <ReviewCard key={review.id} review={review} />)}
           </div>
         ) : (
-          <div className="empty-state">
-            <p>আপনার এখনও কোনো রিভিউ নেই।</p>
-          </div>
+          <div className="empty-state"><p>এখনো কোনো রিভিউ নেই। পণ্য বিক্রির পর ক্রেতা রিভিউ দিতে পারবেন।</p></div>
         )}
-      </div>
+      </section>
 
-      <div className="danger-zone">
-        <h3 style={{ color: 'var(--text-primary)', marginBottom: '1rem' }}>অ্যাকাউন্ট সেটিংস</h3>
-        <button 
-          className="btn btn-outline"
-          onClick={handleLogout}
-          style={{ marginRight: '1rem', color: 'var(--color-error)', borderColor: 'var(--color-error)', backgroundColor: 'transparent' }}
-        >
-          লগআউট করুন
-        </button>
-        <button 
-          className="delete-account-btn"
-          onClick={() => setIsDeleteModalOpen(true)}
-        >
-          অ্যাকাউন্ট ডিলিট করুন
-        </button>
-      </div>
+      <section className="danger-zone">
+        <div>
+          <h3>অ্যাকাউন্ট</h3>
+          <p>লগআউট করুন অথবা অ্যাকাউন্ট মুছে ফেলার অনুরোধ করুন।</p>
+        </div>
+        <div className="danger-zone__actions">
+          <button type="button" className="btn btn-outline" onClick={logout}>লগআউট</button>
+          <button type="button" className="btn btn-danger-outline" onClick={() => setIsDeleteOpen(true)}>অ্যাকাউন্ট মুছুন</button>
+        </div>
+      </section>
 
       <ConfirmModal
-        isOpen={isDeleteModalOpen}
-        onClose={() => setIsDeleteModalOpen(false)}
+        isOpen={isDeleteOpen}
+        onClose={() => setIsDeleteOpen(false)}
         onConfirm={handleDeleteAccount}
-        title="অ্যাকাউন্ট ডিলিট করতে চান?"
-        message="আপনি কি নিশ্চিত যে আপনি আপনার অ্যাকাউন্ট ডিলিট করতে চান? এই কাজটিকে আর পূর্বাবস্থায় ফিরিয়ে আনা যাবে না। আইনি বাধ্যবাধকতার কারণে আপনার কিছু ব্যক্তিগত তথ্য (PII) আগামী ৩০ দিন পর্যন্ত আমাদের সিস্টেমে সংরক্ষিত থাকবে।"
-        confirmText="ডিলিট করুন"
+        title="অ্যাকাউন্ট মুছে ফেলবেন?"
+        message="আপনার সব বিজ্ঞাপন সাথে সাথে লুকিয়ে যাবে এবং ৩০ দিন পর ব্যক্তিগত তথ্য স্থায়ীভাবে মুছে যাবে। এর মধ্যে আবার লগইন করলে অনুরোধটি বাতিল হবে।"
+        confirmText="হ্যাঁ, মুছে ফেলুন"
         confirmVariant="danger"
       />
     </div>

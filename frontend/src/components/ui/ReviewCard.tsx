@@ -1,18 +1,17 @@
+import { Link } from 'react-router-dom';
 import type { IReview } from '../../types';
 import { RatingStars } from './RatingStars';
 import { UserAvatar } from './UserAvatar';
 import { formatRelativeTime } from '../../utils/formatters';
 import './ReviewCard.css';
 
-interface ReviewCardProps {
-  review: IReview;
-}
+export const ReviewCard = ({ review }: { review: IReview }) => {
+  const reviewer = typeof review.reviewerId === 'object' ? review.reviewerId : null;
+  const listing = typeof review.listingId === 'object' ? review.listingId : null;
+  const reviewerName = reviewer?.displayName || 'ক্রেতা';
 
-export const ReviewCard = ({ review }: ReviewCardProps) => {
-  const reviewerName = review.reviewer?.displayName || 'অজ্ঞাত ব্যবহারকারী';
-  
   return (
-    <div className="review-card">
+    <article className="review-card">
       <div className="review-card-header">
         <UserAvatar name={reviewerName} size="md" />
         <div className="review-card-reviewer-info">
@@ -24,6 +23,9 @@ export const ReviewCard = ({ review }: ReviewCardProps) => {
         </div>
       </div>
       <p className="review-card-text">{review.reviewText}</p>
-    </div>
+      {listing && (
+        <Link to={`/listings/${listing.id}`} className="review-card-item">কেনা পণ্য: {listing.title}</Link>
+      )}
+    </article>
   );
 };

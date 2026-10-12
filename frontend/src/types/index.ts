@@ -1,105 +1,145 @@
+// Shapes mirror the backend responses. Every document carries both `id` and `_id`.
+
 export interface IUser {
   id: string;
+  _id?: string;
   phoneNumber: string;
   displayName?: string;
-  verifiedName?: string;
+  verifiedName?: string | null;
   isVerified: boolean;
-  ageGroup?: 'minor' | 'adult';
+  ageGroup?: 'minor' | 'adult' | null;
   role: 'user' | 'admin' | 'moderator';
-  status: 'active' | 'suspended' | 'banned';
+  status: 'active' | 'suspended' | 'inactive' | 'banned';
   averageRating: number;
   totalReviews: number;
   lastLoginDate?: Date | string;
   createdAt: Date | string;
 }
 
+/** Public seller info populated into `listing.sellerId` */
+export interface ISellerSummary {
+  id: string;
+  _id?: string;
+  displayName?: string;
+  verifiedName?: string | null;
+  isVerified: boolean;
+  averageRating: number;
+  totalReviews: number;
+  createdAt?: Date | string;
+  /** Only present on listing detail, and null when hidden / viewer not verified */
+  phoneNumber?: string | null;
+}
+
+export type ListingStatus = 'pending' | 'active' | 'archived' | 'sold';
+export type ListingConditionValue = 'new' | 'like_new' | 'used';
+
+export interface IListingLocation {
+  type: 'Point';
+  coordinates: [number, number]; // [longitude, latitude]
+  addressLine?: string;
+  division?: string;
+  district?: string;
+  thana?: string;
+}
+
 export interface IListing {
   id: string;
-  sellerId: string;
-  seller?: Pick<IUser, 'displayName' | 'verifiedName' | 'isVerified' | 'averageRating' | 'totalReviews' | 'phoneNumber'>;
+  _id?: string;
+  /** A plain id on "my listings", a populated seller object on public endpoints */
+  sellerId: string | ISellerSummary;
   title: string;
   description: string;
   price: number;
-  category: ListingCategory;
-  condition: ListingCondition;
+  category: string;
+  condition?: ListingConditionValue;
   images: string[];
   hidePhoneNumber: boolean;
-  location: {
-    type: 'Point';
-    coordinates: [number, number];
-    addressLine?: string;
-    division: string;
-    district: string;
-    thana: string;
+  location: IListingLocation;
+  soldToBuyerId?: string | null;
+  status: ListingStatus;
+  moderationFlags?: {
+    flagType?: 'keyword' | 'image' | 'report' | 'manual' | null;
+    flagReason?: string | null;
   };
-  soldToBuyerId?: string;
-  status: 'active' | 'sold' | 'expired' | 'under_review' | 'rejected';
-  moderationFlags?: any;
+  distance?: number;
   expiresAt: Date | string;
   createdAt: Date | string;
+  updatedAt?: Date | string;
 }
 
-export interface IChatRoom {
+export interface IUserPreview {
   id: string;
-  listingId: string;
-  listing?: Pick<IListing, 'title' | 'images' | 'price' | 'status'>;
-  buyerId: string;
-  buyer?: Pick<IUser, 'displayName' | 'isVerified'>;
-  sellerId: string;
-  seller?: Pick<IUser, 'displayName' | 'isVerified'>;
-  lastMessage?: string;
-  unreadCount: number;
-  createdAt: Date | string;
-  updatedAt: Date | string;
+  displayName?: string;
+  verifiedName?: string | null;
+  isVerified: boolean;
 }
 
 export interface IMessage {
   id: string;
   roomId: string;
   senderId: string;
+  sender?: IUserPreview | null;
   messageText: string;
   readStatus: boolean;
   createdAt: Date | string;
 }
 
-export interface IReview {
+export interface IChatRoom {
   id: string;
   listingId: string;
-  reviewerId: string;
-  reviewer?: Pick<IUser, 'displayName'>;
+  listing: (Pick<IListing, 'id' | 'title' | 'images' | 'price' | 'status'> & { soldToBuyerId?: string | null; sellerId?: string }) | null;
+  buyerId: string;
+  buyer: IUserPreview | null;
+  sellerId: string;
+  seller: IUserPreview | null;
+  lastMessage: IMessage | null;
+  unreadCount: number;
+  latestActivity?: Date | string;
+  createdAt: Date | string;
+  updatedAt: Date | string;
+}
+
+export interface IReview {
+  id: string;
+  listingId: string | Pick<IListing, 'id' | 'title' | 'images' | 'price'>;
+  reviewerId: string | IUserPreview;
   revieweeId: string;
   rating: number;
   reviewText: string;
   createdAt: Date | string;
 }
 
+export type ReportReason = 'scam' | 'harassment' | 'misrepresentation' | 'inappropriate' | 'other';
+
 export interface IReport {
   id: string;
-  reporterId: string;
-  targetType: 'listing' | 'user' | 'message';
-  targetId: string;
-  reason: string;
+  reporterId: string | Pick<IUser, 'id' | 'displayName'>;
+  targetType: 'Listing' | 'User';
+  targetId: string | { id: string; title?: string; displayName?: string };
+  reason: ReportReason;
   description: string;
-  status: 'pending' | 'resolved' | 'dismissed';
+  status: 'pending' | 'reviewed' | 'resolved' | 'dismissed';
+  resolution?: string | null;
   createdAt: Date | string;
 }
 
 export interface IVerificationLog {
   id: string;
-  userId: string | Pick<IUser, 'displayName' | 'phoneNumber'>;
+  userId: string | Pick<IUser, 'id' | 'displayName' | 'phoneNumber'>;
   verificationType?: 'adult' | 'minor';
   selfieUrl?: string;
-  verificationStatus: 'pending_review' | 'pending' | 'approved' | 'rejected';
-  manualReviewReason?: string;
+  verificationStatus: 'pending_review' | 'approved' | 'rejected';
+  manualReviewReason?: string | null;
   createdAt: Date | string;
 }
 
 export interface ApiResponse<T = any> {
   success: boolean;
-  message: string;
+  message?: string;
   data: T;
 }
 
+/** Admin list endpoints */
 export interface PaginatedResponse<T> {
   success: boolean;
   data: {
@@ -110,38 +150,52 @@ export interface PaginatedResponse<T> {
   };
 }
 
+export interface ListingsPage {
+  listings: IListing[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
+export interface MessagesPage {
+  messages: IMessage[];
+  total: number;
+  page: number;
+  totalPages: number;
+}
+
+export interface ReviewsPage {
+  reviews: IReview[];
+  total: number;
+  page: number;
+  totalPages: number;
+  averageRating: number;
+}
+
+export interface ReportsPage {
+  reports: IReport[];
+  total: number;
+  page: number;
+  totalPages: number;
+}
+
+export type ListingSort = 'newest' | 'oldest' | 'price_low' | 'price_high';
+
 export interface ListingFilters {
-  category?: ListingCategory | string;
+  category?: string;
+  condition?: ListingConditionValue;
   minPrice?: number;
   maxPrice?: number;
   search?: string;
+  division?: string;
+  district?: string;
+  thana?: string;
+  sellerId?: string;
+  sort?: ListingSort;
   lat?: number;
   lng?: number;
   radius?: number;
   page?: number;
   limit?: number;
-  status?: string;
-  sellerId?: string;
 }
-
-export const ListingCategory = {
-  Mobile: 'Mobile',
-  Electronics: 'Electronics',
-  Vehicles: 'Vehicles',
-  Furniture: 'Furniture',
-  Cycles: 'Cycles',
-  Fashion: 'Fashion',
-  HealthBeauty: 'Health & Beauty',
-  FoodRestaurant: 'Food & Restaurant',
-  Travel: 'Travel',
-  SportsOutdoors: 'Sports & Outdoors',
-  Other: 'Other',
-} as const;
-export type ListingCategory = typeof ListingCategory[keyof typeof ListingCategory];
-
-export const ListingCondition = {
-  New: 'New',
-  LikeNew: 'Like New',
-  Used: 'Used',
-} as const;
-export type ListingCondition = typeof ListingCondition[keyof typeof ListingCondition];

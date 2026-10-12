@@ -1,114 +1,44 @@
-.kyc-status-container {
-  max-width: 600px;
-  margin: 2rem auto;
-  padding: 0 1rem;
-}
+.kyc-status { max-width: 620px; padding-block: var(--space-2xl) var(--space-3xl); }
 
-.kyc-status-card {
-  background-color: var(--bg-white);
-  border: 1px solid var(--border-color);
-  border-radius: 1rem;
-  padding: 2.5rem 2rem;
+.kyc-status__card {
   text-align: center;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+  padding: clamp(24px, 4vw, 40px);
+  background: #fff;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-2xl);
 }
 
-.status-icon-wrapper {
-  width: 80px;
-  height: 80px;
+.kyc-status__card h1 { font-size: var(--text-2xl); margin: var(--space-md) 0 8px; }
+
+.kyc-status__icon {
+  display: inline-grid;
+  place-items: center;
+  width: 84px;
+  height: 84px;
   border-radius: 50%;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  margin: 0 auto 1.5rem;
 }
 
-.status-icon-wrapper.pending {
-  background-color: rgba(245, 158, 11, 0.1);
-  color: #d97706; /* amber-600 */
-}
+.kyc-status__icon.is-approved { background: var(--color-success-soft); color: var(--color-success); }
+.kyc-status__icon.is-pending { background: var(--color-secondary-soft); color: #A87700; }
+.kyc-status__icon.is-rejected { background: var(--color-error-soft); color: var(--color-error); }
+.kyc-status__icon.is-empty { background: var(--bg-secondary); color: var(--color-text-muted); }
 
-.status-icon-wrapper.approved {
-  background-color: rgba(16, 185, 129, 0.1);
-  color: #059669; /* emerald-600 */
-}
-
-.status-icon-wrapper.rejected {
-  background-color: rgba(239, 68, 68, 0.1);
-  color: #dc2626; /* red-600 */
-}
-
-.kyc-status-card h1 {
-  font-size: 1.5rem;
-  color: var(--text-primary);
-  margin-bottom: 0.5rem;
-}
-
-.status-description {
-  color: var(--text-secondary);
-  margin-bottom: 1.5rem;
-  line-height: 1.5;
-}
-
-.status-details-box {
-  background-color: var(--bg-secondary);
-  border-radius: 0.5rem;
-  padding: 1.25rem;
+.kyc-status__details {
+  margin: var(--space-lg) 0;
+  padding: var(--space-md);
+  background: var(--color-bg-subtle);
+  border-radius: var(--radius-lg);
   text-align: left;
-  margin-bottom: 2rem;
+  display: grid;
+  gap: 10px;
 }
 
-.status-detail-row {
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: 0.75rem;
-  font-size: 0.9375rem;
-}
+.kyc-status__details > div { display: flex; justify-content: space-between; gap: 12px; }
+.kyc-status__details dt { color: var(--color-text-muted); }
+.kyc-status__details dd { margin: 0; font-weight: 600; }
+.kyc-status__details dd.is-approved { color: var(--color-success); }
+.kyc-status__details dd.is-pending { color: #A87700; }
+.kyc-status__details dd.is-rejected { color: var(--color-error); }
+.kyc-status__reason { flex-direction: column; }
 
-.status-detail-row:last-child {
-  margin-bottom: 0;
-}
-
-.status-detail-label {
-  color: var(--text-muted);
-}
-
-.status-detail-value {
-  font-weight: 500;
-  color: var(--text-primary);
-}
-
-.status-rejection-reason {
-  margin-top: 1rem;
-  padding-top: 1rem;
-  border-top: 1px dashed var(--border-color);
-  color: #dc2626;
-}
-
-.status-rejection-reason .label {
-  display: block;
-  font-size: 0.875rem;
-  font-weight: 600;
-  margin-bottom: 0.25rem;
-}
-
-.kyc-status-actions {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-
-.empty-status-state {
-  text-align: center;
-  padding: 3rem 1rem;
-}
-
-.empty-status-state h2 {
-  font-size: 1.25rem;
-  margin-bottom: 0.5rem;
-}
-
-.empty-status-state p {
-  color: var(--text-secondary);
-  margin-bottom: 1.5rem;
-}
+.kyc-status__actions { display: flex; justify-content: center; flex-wrap: wrap; gap: 10px; }

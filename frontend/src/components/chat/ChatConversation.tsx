@@ -1,279 +1,280 @@
-import { useEffect, useState, useRef } from 'react';
+import { Fragment, useEffect, useMemo, useRef, useState, type FormEvent, type KeyboardEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useQuery, useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Send, AlertTriangle, ExternalLink } from 'lucide-react';
+import { useInfiniteQuery, useQuery, useQueryClient, type InfiniteData } from '@tanstack/react-query';
+import { ArrowLeft, SendHorizontal, ShieldAlert, Star, X } from 'lucide-react';
 import toast from 'react-hot-toast';
-
-import { getRooms, getMessages } from '../../services/chat.service';
+import type { Socket } from 'socket.io-client';
+import { getMessages, getRooms } from '../../services/chat.service';
 import { useAuthStore } from '../../store/authStore';
 import { UserAvatar } from '../ui/UserAvatar';
 import { VerifiedBadge } from '../ui/VerifiedBadge';
+import { SubmitReviewModal } from '../review/SubmitReviewModal';
 import { MessageBubble } from './MessageBubble';
-import { formatPrice } from '../../utils/formatters';
-import type { IMessage } from '../../types';
-import { LoadingSpinner } from '../common/LoadingSpinner';
-
+import { formatDayLabel, formatPrice } from '../../utils/formatters';
+import { PLACEHOLDER_IMAGE } from '../../utils/constants';
+import type { ApiResponse, IMessage, MessagesPage } from '../../types';
 import './ChatConversation.css';
 
 interface ChatConversationProps {
   roomId: string;
-  socket: any;
+  socket: Socket | null;
 }
+
+type MessagesCache = InfiniteData<ApiResponse<MessagesPage>, number>;
+
+const MAX_LENGTH = 1000;
 
 export const ChatConversation = ({ roomId, socket }: ChatConversationProps) => {
   const { user } = useAuthStore();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-  const [inputText, setInputText] = useState('');
+  const bottomRef = useRef<HTMLDivElement>(null);
+  const typingTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastTypingEmit = useRef(0);
+
+  const [text, setText] = useState('');
   const [isTyping, setIsTyping] = useState(false);
-  const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [showSafety, setShowSafety] = useState(true);
+  const [reviewOpen, setReviewOpen] = useState(false);
 
-  // 1. Fetch Room Details
-  const { data: roomsData, isLoading: roomsLoading } = useQuery({
-    queryKey: ['chat-rooms'],
-    queryFn: getRooms,
-  });
+  const { data: roomsData, isLoading: roomsLoading } = useQuery({ queryKey: ['chat-rooms'], queryFn: getRooms });
+  const room = roomsData?.data?.find((r) => r.id === roomId);
 
-  const room = roomsData?.data?.find(r => r.id === roomId);
-
-  // 2. Fetch Messages with Infinite Query (Mock implementation of cursor/page based)
-  const { 
-    data: messagesData, 
-    isLoading: messagesLoading,
-    fetchNextPage,
-    hasNextPage,
-    isFetchingNextPage
-  } = useInfiniteQuery({
+  const { data, isLoading, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteQuery({
     queryKey: ['chat-messages', roomId],
-    queryFn: ({ pageParam = 1 }) => getMessages(roomId, pageParam as number),
+    queryFn: ({ pageParam }) => getMessages(roomId, pageParam),
     initialPageParam: 1,
-    getNextPageParam: (lastPage) => {
-      if (lastPage.data.page < lastPage.data.totalPages) return lastPage.data.page + 1;
-      return undefined;
-    },
-    enabled: !!roomId,
+    getNextPageParam: (last) => (last.data.page < last.data.totalPages ? last.data.page + 1 : undefined),
   });
 
-  // Flatten messages and reverse them to show oldest at top, newest at bottom
-  // Assuming the API returns page 1 with the newest messages (descending).
-  // We need to reverse them for UI display.
-  const allMessages = messagesData?.pages.flatMap(page => page.data.items).reverse() || [];
+  // API pages are newest-first; flatten and reverse for display (oldest at top)
+  const messages = useMemo(
+    () => (data?.pages.flatMap((p) => p.data.messages) || []).slice().reverse(),
+    [data]
+  );
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
+  const scrollToBottom = (smooth = true) => bottomRef.current?.scrollIntoView({ behavior: smooth ? 'smooth' : 'auto', block: 'end' });
 
-  // Socket Events
   useEffect(() => {
-    if (!socket || !roomId) return;
+    if (!socket) return;
 
-    // Join room
     socket.emit('join_room', { roomId });
-    socket.emit('mark_read', { roomId }); // Mark opened room as read
+    socket.emit('mark_read', { roomId });
 
-    // Invalidate rooms to clear unread counts if we just opened it
-    queryClient.invalidateQueries({ queryKey: ['chat-rooms'] });
+    const onMessage = (message: IMessage) => {
+      if (message.roomId !== roomId) return;
+      queryClient.setQueryData<MessagesCache>(['chat-messages', roomId], (old) => {
+        if (!old) return old;
+        if (old.pages.some((p) => p.data.messages.some((m) => m.id === message.id))) return old;
+        const [first, ...rest] = old.pages;
+        return { ...old, pages: [{ ...first, data: { ...first.data, messages: [message, ...first.data.messages] } }, ...rest] };
+      });
+      if (message.senderId !== user?.id) {
+        setIsTyping(false);
+        socket.emit('mark_read', { roomId });
+      }
+      requestAnimationFrame(() => scrollToBottom());
+    };
 
-    const handleNewMessage = (message: IMessage) => {
-      if (message.roomId === roomId) {
-        // Optimistically add message
-        queryClient.setQueryData(['chat-messages', roomId], (oldData: any) => {
-          if (!oldData) return oldData;
-          // Add to the first page (since it's the newest)
-          const newPages = [...oldData.pages];
-          if (newPages.length > 0) {
-             const items = [message, ...newPages[0].data.items];
-             newPages[0] = { ...newPages[0], data: { ...newPages[0].data, items } };
-          }
-          return { ...oldData, pages: newPages };
-        });
-        
-        // Mark as read if we are receiving it while open
-        if (message.senderId !== user?.id) {
-          socket.emit('mark_read', { roomId });
+    const onTyping = (payload: { roomId: string; userId: string }) => {
+      if (payload.roomId !== roomId || payload.userId === user?.id) return;
+      setIsTyping(true);
+      if (typingTimer.current) clearTimeout(typingTimer.current);
+      typingTimer.current = setTimeout(() => setIsTyping(false), 3000);
+    };
+
+    const onRead = (payload: { roomId: string; readBy: string }) => {
+      if (payload.roomId !== roomId || payload.readBy === user?.id) return;
+      queryClient.setQueryData<MessagesCache>(['chat-messages', roomId], (old) =>
+        old && {
+          ...old,
+          pages: old.pages.map((p) => ({
+            ...p,
+            data: { ...p.data, messages: p.data.messages.map((m) => (m.senderId === user?.id ? { ...m, readStatus: true } : m)) },
+          })),
         }
-        
-        scrollToBottom();
-      }
+      );
     };
 
-    const handleUserTyping = (data: { roomId: string, userId: string }) => {
-      if (data.roomId === roomId && data.userId !== user?.id) {
-        setIsTyping(true);
-        // Auto hide typing indicator after 3 seconds
-        setTimeout(() => setIsTyping(false), 3000);
-      }
+    const onWarning = (payload: { roomId: string; warnings: string[] }) => {
+      if (payload.roomId === roomId) payload.warnings.forEach((w) => toast(w, { icon: '⚠️' }));
     };
 
-    const handleMessageWarning = (data: { message: string }) => {
-      toast.error(data.message);
-    };
-
-    socket.on('new_message', handleNewMessage);
-    socket.on('user_typing', handleUserTyping);
-    socket.on('message_warning', handleMessageWarning);
+    socket.on('new_message', onMessage);
+    socket.on('user_typing', onTyping);
+    socket.on('messages_read', onRead);
+    socket.on('message_warning', onWarning);
 
     return () => {
-      socket.off('new_message', handleNewMessage);
-      socket.off('user_typing', handleUserTyping);
-      socket.off('message_warning', handleMessageWarning);
+      socket.emit('leave_room', { roomId });
+      socket.off('new_message', onMessage);
+      socket.off('user_typing', onTyping);
+      socket.off('messages_read', onRead);
+      socket.off('message_warning', onWarning);
     };
   }, [socket, roomId, queryClient, user?.id]);
 
-  // Scroll to bottom on initial load
+  // Opening a room marks it read on the server — refresh unread badges
   useEffect(() => {
-    if (allMessages.length > 0) {
-      scrollToBottom();
-    }
-  }, [allMessages.length]);
+    if (!isLoading) queryClient.invalidateQueries({ queryKey: ['chat-rooms'] });
+  }, [isLoading, queryClient]);
 
-  const handleTyping = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setInputText(e.target.value);
-    
-    if (socket && roomId) {
-      socket.emit('typing', { roomId });
-      
-      if (typingTimeoutRef.current) {
-        clearTimeout(typingTimeoutRef.current);
-      }
-      
-      typingTimeoutRef.current = setTimeout(() => {
-        // Emit stopped typing if API supports it, or just rely on timeout on receiver end
-      }, 1000);
+  useEffect(() => {
+    if (!isLoading) scrollToBottom(false);
+  }, [isLoading]);
+
+  const send = (e?: FormEvent) => {
+    e?.preventDefault();
+    const messageText = text.trim();
+    if (!messageText || !socket) return;
+    if (!socket.connected) {
+      toast.error('সংযোগ নেই — একটু পর চেষ্টা করুন');
+      return;
     }
+    socket.emit('send_message', { roomId, messageText }, (res: { success: boolean; error?: string }) => {
+      if (!res?.success) toast.error(res?.error || 'মেসেজ পাঠানো যায়নি');
+    });
+    setText('');
   };
 
-  const handleSendMessage = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!inputText.trim() || !socket || !roomId) return;
-
-    const messageData = {
-      roomId,
-      messageText: inputText.trim()
-    };
-
-    socket.emit('send_message', messageData);
-    
-    // We rely on 'new_message' event to update UI (even for our own messages)
-    // Or we could optimistically update here for immediate feedback.
-    
-    setInputText('');
-  };
-
-  // Handle Enter key to send
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+  const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      handleSendMessage(e);
+      send();
     }
   };
 
-  if (roomsLoading || messagesLoading) {
-    return <LoadingSpinner fullScreen />;
+  const handleChange = (value: string) => {
+    setText(value.slice(0, MAX_LENGTH));
+    const now = Date.now();
+    if (socket && now - lastTypingEmit.current > 1500) {
+      socket.emit('typing', { roomId });
+      lastTypingEmit.current = now;
+    }
+  };
+
+  if (roomsLoading || isLoading) {
+    return <div className="conv conv--loading"><span className="spinner" /></div>;
   }
 
   if (!room) {
     return (
-      <div className="chat-conversation" style={{ justifyContent: 'center', alignItems: 'center' }}>
-        <p>রুম পাওয়া যায়নি</p>
+      <div className="conv conv--loading">
+        <p>চ্যাটটি পাওয়া যায়নি।</p>
+        <Link to="/chat" className="btn btn-outline btn-sm">সব মেসেজ</Link>
       </div>
     );
   }
 
-  const isSeller = user?.id === room.sellerId;
-  const otherUser = isSeller ? room.buyer : room.seller;
-
-  // Simple date grouping (for MVP)
-  // In a real app, you'd iterate and insert <div className="date-separator"></div> where date changes
+  const iAmSeller = room.sellerId === user?.id;
+  const other = iAmSeller ? room.buyer : room.seller;
+  const listing = room.listing;
+  const canReview = !iAmSeller && listing?.status === 'sold' && listing.soldToBuyerId === user?.id;
+  const closed = listing?.status && listing.status !== 'active';
 
   return (
-    <div className="chat-conversation">
-      <div className="chat-conv-header">
-        <div className="chat-conv-user-info">
-          <button className="back-btn-mobile" onClick={() => navigate('/chat')}>
-            <ArrowLeft size={24} />
-          </button>
-          <UserAvatar name={otherUser?.displayName || 'অজ্ঞাত'} size="sm" />
-          <div className="chat-conv-user-details">
-            <h2>
-              {otherUser?.displayName || 'অজ্ঞাত ব্যবহারকারী'}
-              {otherUser?.isVerified && <VerifiedBadge size="sm" />}
-            </h2>
-            <div className="chat-conv-listing-info">
-              {room.listing?.images?.[0] && (
-                <img src={room.listing.images[0]} alt="thumbnail" />
-              )}
-              <span className="chat-conv-listing-title">{room.listing?.title}</span>
-              <span className="chat-conv-price">{formatPrice(room.listing?.price || 0)}</span>
-            </div>
+    <div className="conv">
+      <header className="conv__head">
+        <button type="button" className="icon-btn conv__back" onClick={() => navigate('/chat')} aria-label="ফিরে যান">
+          <ArrowLeft size={20} />
+        </button>
+        <UserAvatar name={other?.displayName || 'U'} size="sm" />
+        <div className="conv__who">
+          <div className="conv__name">
+            <span className="truncate">{other?.displayName || 'অজ্ঞাত'}</span>
+            {other?.isVerified && <VerifiedBadge size="sm" label="ভেরিফাইড" />}
           </div>
+          <span className="conv__role">{iAmSeller ? 'ক্রেতা' : 'বিক্রেতা'}</span>
         </div>
-        <Link to={`/listings/${room.listingId}`} className="btn btn-outline btn-sm flex-center gap-1">
-          <ExternalLink size={14} /> বিজ্ঞাপন দেখুন
+      </header>
+
+      {listing && (
+        <Link to={`/listings/${listing.id}`} className="conv__listing">
+          <img src={listing.images?.[0] || PLACEHOLDER_IMAGE} alt="" />
+          <div className="conv__listing-text">
+            <span className="truncate">{listing.title}</span>
+            <strong>{formatPrice(listing.price)}</strong>
+          </div>
+          {listing.status === 'sold' && <span className="badge badge-blue">বিক্রিত</span>}
         </Link>
-      </div>
+      )}
 
-      <div className="chat-safety-banner">
-        <AlertTriangle size={16} />
-        <span>নিরাপত্তা: জনবহুল জায়গায় দেখা করুন। অগ্রিম টাকা পাঠাবেন না।</span>
-      </div>
+      {canReview && (
+        <div className="conv__review">
+          <Star size={18} />
+          <span>আপনি এই পণ্যটি কিনেছেন! বিক্রেতাকে রিভিউ দিয়ে অন্যদের সাহায্য করুন।</span>
+          <button type="button" className="btn btn-secondary btn-sm" onClick={() => setReviewOpen(true)}>রিভিউ দিন</button>
+        </div>
+      )}
 
-      <div className="chat-messages-area">
+      {showSafety && (
+        <div className="conv__safety">
+          <ShieldAlert size={16} />
+          <span>জনবহুল জায়গায় দেখা করুন। পণ্য না দেখে বিকাশ/নগদে অগ্রিম টাকা পাঠাবেন না।</span>
+          <button type="button" onClick={() => setShowSafety(false)} aria-label="বন্ধ করুন"><X size={14} /></button>
+        </div>
+      )}
+
+      <div className="conv__messages">
         {hasNextPage && (
-          <div style={{ textAlign: 'center', padding: '1rem 0' }}>
-            <button 
-              className="btn btn-outline btn-sm" 
-              onClick={() => fetchNextPage()}
-              disabled={isFetchingNextPage}
-            >
-              {isFetchingNextPage ? 'লোড হচ্ছে...' : 'আরও মেসেজ'}
-            </button>
+          <button type="button" className="btn btn-ghost btn-sm conv__more" onClick={() => fetchNextPage()} disabled={isFetchingNextPage}>
+            {isFetchingNextPage ? 'লোড হচ্ছে…' : 'পুরনো মেসেজ দেখুন'}
+          </button>
+        )}
+
+        {messages.length === 0 && (
+          <div className="conv__empty">
+            <span aria-hidden="true">👋</span>
+            <p>হ্যালো বলুন! পণ্যটি এখনো আছে কি না, দাম আলোচনা করা যাবে কি না জিজ্ঞেস করুন।</p>
           </div>
         )}
 
-        {/* Date separator example */}
-        <div className="date-separator"><span>আজ</span></div>
-
-        {allMessages.map((msg, index) => (
-          <MessageBubble 
-            key={msg.id || index} 
-            message={msg} 
-            isOwn={msg.senderId === user?.id} 
-          />
-        ))}
+        {messages.map((msg, i) => {
+          const day = formatDayLabel(msg.createdAt);
+          const showDay = i === 0 || formatDayLabel(messages[i - 1].createdAt) !== day;
+          return (
+            <Fragment key={msg.id}>
+              {showDay && <div className="conv__day"><span>{day}</span></div>}
+              <MessageBubble message={msg} isOwn={msg.senderId === user?.id} />
+            </Fragment>
+          );
+        })}
 
         {isTyping && (
-          <div className="typing-indicator">
-            <div className="typing-dot"></div>
-            <div className="typing-dot"></div>
-            <div className="typing-dot"></div>
+          <div className="typing" aria-label="টাইপ করছে">
+            <span /><span /><span />
           </div>
         )}
-        <div ref={messagesEndRef} />
+        <div ref={bottomRef} />
       </div>
 
-      <div className="chat-input-area">
-        <form className="chat-input-form" onSubmit={handleSendMessage}>
-          <div className="chat-input-wrapper">
-            <textarea
-              className="chat-input"
-              placeholder="মেসেজ লিখুন..."
-              value={inputText}
-              onChange={handleTyping}
-              onKeyDown={handleKeyDown}
-              rows={1}
-            />
-          </div>
-          <button 
-            type="submit" 
-            className="btn-send"
-            disabled={!inputText.trim() || !socket?.connected}
-          >
-            <Send size={20} />
-          </button>
-        </form>
-      </div>
+      {closed ? (
+        <div className="conv__closed">এই বিজ্ঞাপনটি আর সক্রিয় নেই — নতুন মেসেজ পাঠানো যাবে, তবে পণ্যটি হয়তো আর পাওয়া যাবে না।</div>
+      ) : null}
+
+      <form className="conv__input" onSubmit={send}>
+        <textarea
+          value={text}
+          onChange={(e) => handleChange(e.target.value)}
+          onKeyDown={handleKeyDown}
+          placeholder="মেসেজ লিখুন…"
+          rows={1}
+          aria-label="মেসেজ"
+        />
+        <button type="submit" className="conv__send" disabled={!text.trim()} aria-label="পাঠান">
+          <SendHorizontal size={20} />
+        </button>
+      </form>
+
+      {listing && canReview && (
+        <SubmitReviewModal
+          isOpen={reviewOpen}
+          onClose={() => setReviewOpen(false)}
+          listingId={listing.id}
+          sellerName={other?.displayName}
+          listingTitle={listing.title}
+        />
+      )}
     </div>
   );
 };

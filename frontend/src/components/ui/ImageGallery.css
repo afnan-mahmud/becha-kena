@@ -9,7 +9,7 @@
   position: relative;
   width: 100%;
   aspect-ratio: 4 / 3;
-  border-radius: var(--border-radius-lg);
+  border-radius: var(--radius-xl);
   overflow: hidden;
   background-color: var(--background-color);
 }
@@ -24,9 +24,9 @@
   position: relative;
   width: 100%;
   aspect-ratio: 4 / 3;
-  border-radius: var(--border-radius-lg);
+  border-radius: var(--radius-xl);
   overflow: hidden;
-  background-color: #000; /* Dark background for images */
+  background-color: #1B2420;
 }
 
 .main-swiper {

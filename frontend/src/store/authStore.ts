@@ -13,7 +13,7 @@ interface AuthState {
   updateUser: (updates: Partial<IUser>) => void;
 }
 
-export const useAuthStore = create<AuthState>((set) => ({
+export const useAuthStore = create<AuthState>((set, get) => ({
   user: null,
   isAuthenticated: false,
   isLoading: true,
@@ -34,7 +34,8 @@ export const useAuthStore = create<AuthState>((set) => ({
   }),
 
   fetchUser: async () => {
-    set({ isLoading: true });
+    // Only block the UI on the very first load — later refreshes happen in the background
+    if (!get().user) set({ isLoading: true });
     try {
       const response = await getMe();
       if (response.success && response.data) {
@@ -44,6 +45,8 @@ export const useAuthStore = create<AuthState>((set) => ({
           isVerified: response.data.isVerified,
           isLoading: false,
         });
+      } else {
+        set({ isLoading: false });
       }
     } catch (error) {
       set({

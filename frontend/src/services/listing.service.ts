@@ -1,13 +1,29 @@
 import api from '../api/axios';
-import type { ApiResponse, IListing, ListingFilters, PaginatedResponse } from '../types';
+import type { ApiResponse, IListing, ListingFilters, ListingsPage } from '../types';
 
-export const getListings = async (filters: ListingFilters): Promise<PaginatedResponse<IListing>> => {
-  const response = await api.get<any>('/listings', { params: filters });
-  
-  if (response.data?.data && response.data.data.listings && !response.data.data.items) {
-    response.data.data.items = response.data.data.listings;
-  }
-  
+export interface ListingPayload {
+  title: string;
+  description: string;
+  price: number;
+  category: string;
+  condition: string;
+  images: string[];
+  hidePhoneNumber: boolean;
+  location: {
+    type: 'Point';
+    coordinates: [number, number];
+    division: string;
+    district: string;
+    thana: string;
+    addressLine?: string;
+  };
+}
+
+const cleanParams = (filters: ListingFilters) =>
+  Object.fromEntries(Object.entries(filters).filter(([, v]) => v !== undefined && v !== '' && v !== null));
+
+export const getListings = async (filters: ListingFilters = {}): Promise<ApiResponse<ListingsPage>> => {
+  const response = await api.get<ApiResponse<ListingsPage>>('/listings', { params: cleanParams(filters) });
   return response.data;
 };
 
@@ -16,18 +32,19 @@ export const getListingById = async (id: string): Promise<ApiResponse<IListing>>
   return response.data;
 };
 
-export const createListing = async (data: Partial<IListing>): Promise<ApiResponse<IListing>> => {
+export const createListing = async (data: ListingPayload): Promise<ApiResponse<IListing>> => {
   const response = await api.post<ApiResponse<IListing>>('/listings', data);
   return response.data;
 };
 
-export const updateListing = async (id: string, data: Partial<IListing>): Promise<ApiResponse<IListing>> => {
+export const updateListing = async (id: string, data: Partial<ListingPayload>): Promise<ApiResponse<IListing>> => {
   const response = await api.put<ApiResponse<IListing>>(`/listings/${id}`, data);
   return response.data;
 };
 
-export const markAsSold = async (id: string, buyerId: string): Promise<ApiResponse<IListing>> => {
-  const response = await api.patch<ApiResponse<IListing>>(`/listings/${id}/sell`, { buyerId });
+/** Omit buyerId when the item was sold outside Becha-Kena */
+export const markAsSold = async (id: string, buyerId?: string): Promise<ApiResponse<IListing>> => {
+  const response = await api.patch<ApiResponse<IListing>>(`/listings/${id}/sell`, buyerId ? { buyerId } : {});
   return response.data;
 };
 
@@ -41,7 +58,7 @@ export const deleteListing = async (id: string): Promise<ApiResponse> => {
   return response.data;
 };
 
-export const getMyListings = async (status?: string): Promise<ApiResponse<{ listings: IListing[], total: number, page: number, totalPages: number }>> => {
-  const response = await api.get<ApiResponse<{ listings: IListing[], total: number, page: number, totalPages: number }>>('/listings/my', { params: { status } });
+export const getMyListings = async (status?: string, page = 1, limit = 50): Promise<ApiResponse<ListingsPage>> => {
+  const response = await api.get<ApiResponse<ListingsPage>>('/listings/my', { params: { status, page, limit } });
   return response.data;
 };

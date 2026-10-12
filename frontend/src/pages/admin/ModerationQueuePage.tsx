@@ -104,10 +104,10 @@ export const ModerationQueuePage = () => {
                     {formatRelativeTime(listing.createdAt)}
                   </td>
                   <td>
-                    {listing.moderationFlags?.isFlagged && (
+                    {listing.moderationFlags?.flagType && (
                       <span className="flag-badge">
                         <AlertTriangle size={12} />
-                        {listing.moderationFlags.flagType || 'Flagged'}
+                        {listing.moderationFlags.flagReason || listing.moderationFlags.flagType}
                       </span>
                     )}
                   </td>

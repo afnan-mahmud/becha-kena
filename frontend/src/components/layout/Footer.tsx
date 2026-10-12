@@ -1,71 +1,64 @@
 import { Link } from 'react-router-dom';
-import { ShoppingBag, Globe, Mail, Phone, MessageSquare } from 'lucide-react';
+import { ShieldCheck, MessageCircle, BadgeCheck } from 'lucide-react';
+import { CATEGORIES } from '../../utils/constants';
+import { Logo } from './Logo';
 import './Footer.css';
 
 export const Footer = () => {
+  const year = new Date().getFullYear();
+
   return (
-    <footer className="main-footer">
-      <div className="container footer-container">
-        <div className="footer-col about-col">
-          <Link to="/" className="footer-logo">
-            <ShoppingBag size={24} className="logo-icon" />
-            <span className="logo-text-white">Becha</span>
-            <span className="logo-text-yellow">-Kena</span>
-          </Link>
-          <p className="footer-desc">
-            বাংলাদেশের সবচেয়ে নিরাপদ সেকেন্ড-হ্যান্ড মার্কেটপ্লেস। আপনার পুরাতন জিনিস বিক্রি করুন সহজে এবং নিরাপদে।
+    <footer className="site-footer">
+      <div className="stitch-divider" aria-hidden="true" />
+      <div className="container site-footer__grid">
+        <div className="site-footer__about">
+          <Logo variant="light" />
+          <p>
+            বাংলাদেশের প্রথম ১০০% NID ভেরিফাইড সেকেন্ড-হ্যান্ড মার্কেটপ্লেস। পুরনো জিনিস বেচুন সহজে, কিনুন নিশ্চিন্তে।
           </p>
-          <div className="social-links">
-            <a href="#" className="social-link"><Globe size={20} /></a>
-            <a href="#" className="social-link"><Mail size={20} /></a>
-            <a href="#" className="social-link"><Phone size={20} /></a>
-            <a href="#" className="social-link"><MessageSquare size={20} /></a>
-          </div>
-        </div>
-
-        <div className="footer-col">
-          <h4 className="footer-heading">Quick Links</h4>
-          <ul className="footer-links">
-            <li><Link to="/">Home</Link></li>
-            <li><Link to="/listings">Browse Listings</Link></li>
-            <li><Link to="/listings/create">Post Ad</Link></li>
-            <li><Link to="/how-it-works">How It Works</Link></li>
-            <li><Link to="/contact">Contact Us</Link></li>
+          <ul className="site-footer__trust">
+            <li><ShieldCheck size={16} /> NID যাচাইকৃত ইউজার</li>
+            <li><MessageCircle size={16} /> নিরাপদ ইন-অ্যাপ চ্যাট</li>
+            <li><BadgeCheck size={16} /> রিভিউ ও রেটিং</li>
           </ul>
         </div>
 
-        <div className="footer-col">
-          <h4 className="footer-heading">Categories</h4>
-          <ul className="footer-links">
-            <li><Link to="/listings?category=Mobile">Mobile</Link></li>
-            <li><Link to="/listings?category=Electronics">Electronics</Link></li>
-            <li><Link to="/listings?category=Vehicles">Vehicles</Link></li>
-            <li><Link to="/listings?category=Furniture">Furniture</Link></li>
-            <li><Link to="/listings?category=Fashion">Fashion</Link></li>
-            <li><Link to="/listings?category=Other">Other</Link></li>
+        <div>
+          <h4>বেচা-কেনা</h4>
+          <ul>
+            <li><Link to="/listings">সব বিজ্ঞাপন</Link></li>
+            <li><Link to="/listings/create">বিজ্ঞাপন দিন</Link></li>
+            <li><Link to="/verify">NID ভেরিফিকেশন</Link></li>
+            <li><Link to="/dashboard/my-listings">আমার বিজ্ঞাপন</Link></li>
           </ul>
         </div>
 
-        <div className="footer-col">
-          <h4 className="footer-heading">Support</h4>
-          <ul className="footer-links">
-            <li><Link to="/faq">FAQ</Link></li>
-            <li><Link to="/safety">Safety Tips</Link></li>
-            <li><Link to="/report">Report a Problem</Link></li>
-            <li><Link to="/terms">Terms of Service</Link></li>
-            <li><Link to="/privacy">Privacy Policy</Link></li>
+        <div>
+          <h4>জনপ্রিয় ক্যাটাগরি</h4>
+          <ul>
+            {CATEGORIES.slice(0, 6).map((cat) => (
+              <li key={cat.value}>
+                <Link to={`/listings?category=${encodeURIComponent(cat.value)}`}>{cat.label}</Link>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        <div>
+          <h4>সহায়তা</h4>
+          <ul>
+            <li><a href="/#how-it-works">কীভাবে কাজ করে</a></li>
+            <li><a href="/#safety">নিরাপত্তা টিপস</a></li>
+            <li><Link to="/profile/reports">আমার রিপোর্ট</Link></li>
+            <li><a href="mailto:support@bechakena.com">support@bechakena.com</a></li>
           </ul>
         </div>
       </div>
 
-      <div className="footer-bottom">
-        <div className="container bottom-content">
-          <p className="copyright">© 2026 Becha-Kena. All rights reserved.</p>
-          <div className="payment-methods">
-            {/* Placeholders for payment method icons */}
-            <span className="payment-badge">bKash</span>
-            <span className="payment-badge">Nagad</span>
-          </div>
+      <div className="site-footer__bottom">
+        <div className="container site-footer__bottom-inner">
+          <p>© {year} বেচা-কেনা। সব লেনদেন ক্রেতা-বিক্রেতার নিজ দায়িত্বে, সামনাসামনি সম্পন্ন হয়।</p>
+          <p className="site-footer__made">ভালোবাসা দিয়ে তৈরি, বাংলাদেশে 🇧🇩</p>
         </div>
       </div>
     </footer>

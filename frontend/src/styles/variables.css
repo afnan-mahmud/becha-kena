@@ -1,97 +1,114 @@
+/*
+ * Becha-Kena design tokens
+ * Palette is drawn from the Bangladesh flag (deep green + red) with a marigold
+ * accent inspired by rickshaw art, on a warm "kantha" off-white background.
+ */
 :root {
-  /* Primary Colors */
-  --color-primary: #2D5BFF;
-  --color-primary-dark: #1E40AF;
-  --color-primary-light: #60A5FA;
+  /* Brand */
+  --color-primary: #00704A;        /* flag green */
+  --color-primary-dark: #00563A;
+  --color-primary-darker: #003D29;
+  --color-primary-light: #3FA07A;
+  --color-primary-soft: #E3F3EC;
+  --color-primary-rgb: 0, 112, 74;
 
-  /* Secondary Colors */
-  --color-secondary: #FFD60A;
-  --color-secondary-dark: #CA8A04;
+  --color-secondary: #F4B400;      /* marigold */
+  --color-secondary-dark: #C98F00;
+  --color-secondary-soft: #FFF5D6;
 
-  /* Accent Color */
-  --color-accent: #FF6B35;
+  --color-accent: #E63946;         /* flag red */
+  --color-accent-dark: #C32834;
+  --color-accent-soft: #FDECEE;
 
-  /* State Colors */
-  --color-success: #22C55E;
-  --color-error: #EF4444;
-  --color-warning: #F59E0B;
-  --color-info: #3B82F6;
-  --color-verified: #10B981;
+  /* State */
+  --color-success: #16A34A;
+  --color-success-soft: #E7F7ED;
+  --color-error: #DC2626;
+  --color-error-soft: #FDECEC;
+  --color-warning: #D97706;
+  --color-warning-soft: #FEF3E2;
+  --color-info: #2563EB;
+  --color-info-soft: #E8EFFE;
+  --color-verified: #0E9F6E;
 
-  /* Neutral Colors */
-  --color-bg: #F5F5F5;
+  /* Neutrals (warm) */
+  --color-bg: #F7F5F0;
   --color-bg-white: #FFFFFF;
-  --color-bg-dark: #1A1A2E;
-  --color-text-primary: #1F2937;
-  --color-text-secondary: #6B7280;
-  --color-text-muted: #9CA3AF;
-  --color-border: #E5E7EB;
-  --color-border-dark: #D1D5DB;
+  --color-bg-subtle: #FBFAF7;
+  --color-bg-dark: #0F1F18;
+  --color-text-primary: #1B2420;
+  --color-text-secondary: #5B6660;
+  --color-text-muted: #8F9892;
+  --color-border: #E7E3DA;
+  --color-border-dark: #D5D0C4;
 
-  /* Spacing Scale */
-  --space-xs: 4px;
-  --space-sm: 8px;
-  --space-md: 16px;
-  --space-lg: 24px;
-  --space-xl: 32px;
-  --space-2xl: 40px;
-  --space-3xl: 48px;
+  /* Typography */
+  --font-sans: 'Hind Siliguri', 'Plus Jakarta Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-display: 'Plus Jakarta Sans', 'Hind Siliguri', system-ui, sans-serif;
 
-  /* Border Radius */
-  --radius-sm: 4px;
-  --radius-md: 8px;
-  --radius-lg: 12px;
-  --radius-xl: 16px;
-  --radius-full: 9999px;
-
-  /* Shadows */
-  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-
-  /* Font Sizes */
   --text-xs: 0.75rem;
   --text-sm: 0.875rem;
   --text-base: 1rem;
   --text-lg: 1.125rem;
   --text-xl: 1.25rem;
   --text-2xl: 1.5rem;
-  --text-3xl: 1.875rem;
-  --text-4xl: 2.25rem;
+  --text-3xl: clamp(1.6rem, 1.2rem + 1.2vw, 1.95rem);
+  --text-4xl: clamp(1.9rem, 1.3rem + 2vw, 2.6rem);
+  --text-hero: clamp(2rem, 1.2rem + 3.2vw, 3.4rem);
 
-  /* Font Weights */
   --font-normal: 400;
   --font-medium: 500;
   --font-semibold: 600;
   --font-bold: 700;
 
-  /* Transitions */
-  --transition-fast: 150ms ease;
-  --transition-normal: 250ms ease;
-  --transition-slow: 350ms ease;
+  /* Spacing */
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 32px;
+  --space-2xl: 40px;
+  --space-3xl: 56px;
 
-  /* Z-Index */
+  /* Radius */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 20px;
+  --radius-2xl: 28px;
+  --radius-full: 9999px;
+
+  /* Elevation */
+  --shadow-xs: 0 1px 2px rgba(27, 36, 32, 0.06);
+  --shadow-sm: 0 1px 3px rgba(27, 36, 32, 0.08), 0 1px 2px rgba(27, 36, 32, 0.04);
+  --shadow-md: 0 6px 16px -4px rgba(27, 36, 32, 0.12), 0 2px 6px -2px rgba(27, 36, 32, 0.06);
+  --shadow-lg: 0 16px 32px -8px rgba(27, 36, 32, 0.16), 0 4px 10px -4px rgba(27, 36, 32, 0.08);
+  --shadow-xl: 0 28px 56px -12px rgba(27, 36, 32, 0.22);
+  --shadow-focus: 0 0 0 4px rgba(var(--color-primary-rgb), 0.18);
+
+  /* Motion */
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --transition-fast: 150ms var(--ease-out);
+  --transition-normal: 250ms var(--ease-out);
+  --transition-slow: 400ms var(--ease-out);
+
+  /* Layers */
   --z-dropdown: 1000;
   --z-sticky: 1020;
   --z-modal: 1050;
   --z-tooltip: 1070;
   --z-toast: 1090;
 
-  /* Container Widths */
+  /* Layout */
   --container-sm: 640px;
   --container-md: 768px;
   --container-lg: 1024px;
-  --container-xl: 1280px;
-  --container-2xl: 1440px;
+  --container-xl: 1240px;
+  --container-2xl: 1320px;
+  --header-height: 68px;
+  --bottom-nav-height: 64px;
 
-  /* Breakpoints */
-  --bp-mobile: 480px;
-  --bp-tablet: 768px;
-  --bp-sm-desktop: 1024px;
-  --bp-desktop: 1440px;
-
-  /* Legacy Compatibility Variables (Used in components) */
+  /* Legacy aliases (older component CSS still reads these) */
   --primary-color: var(--color-primary);
   --primary-color-dark: var(--color-primary-dark);
   --primary-hover: var(--color-primary-dark);
@@ -99,20 +116,21 @@
   --secondary-color: var(--color-secondary);
   --success-color: var(--color-success);
   --danger-color: var(--color-error);
-  
+  --warning-color: var(--color-warning);
+
   --text-primary: var(--color-text-primary);
   --text-secondary: var(--color-text-secondary);
   --text-muted: var(--color-text-muted);
   --text-color: var(--color-text-primary);
   --text-light: var(--color-text-muted);
-  
+
   --border-color: var(--color-border);
-  --bg-secondary: #E5E7EB;
+  --bg-secondary: #EFECE5;
   --bg-white: var(--color-bg-white);
   --surface-color: var(--color-bg-white);
   --background-color: var(--color-bg);
   --card-bg: var(--color-bg-white);
-  
+
   --border-radius-sm: var(--radius-sm);
   --border-radius-md: var(--radius-md);
   --border-radius-lg: var(--radius-lg);

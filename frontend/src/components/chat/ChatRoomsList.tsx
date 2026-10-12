@@ -1,125 +1,88 @@
-import { useEffect } from 'react';
+import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
+import { Search } from 'lucide-react';
+import type { Socket } from 'socket.io-client';
 import { getRooms } from '../../services/chat.service';
 import { useAuthStore } from '../../store/authStore';
 import { UserAvatar } from '../ui/UserAvatar';
-import { VerifiedBadge } from '../ui/VerifiedBadge';
-import { formatRelativeTime } from '../../utils/formatters';
-import type { IChatRoom, IMessage } from '../../types';
-import { LoadingSpinner } from '../common/LoadingSpinner';
+import { formatChatTime, formatNumber } from '../../utils/formatters';
+import { PLACEHOLDER_IMAGE } from '../../utils/constants';
 import './ChatRoomsList.css';
 
 interface ChatRoomsListProps {
   activeRoomId?: string;
-  socket: any;
+  socket: Socket | null;
+  isConnected: boolean;
 }
 
-export const ChatRoomsList = ({ activeRoomId, socket }: ChatRoomsListProps) => {
+export const ChatRoomsList = ({ activeRoomId, isConnected }: ChatRoomsListProps) => {
   const { user } = useAuthStore();
-  const queryClient = useQueryClient();
+  const [filter, setFilter] = useState('');
 
-  const { data: roomsData, isLoading } = useQuery({
-    queryKey: ['chat-rooms'],
-    queryFn: getRooms,
-  });
+  // Live updates come from useUnreadCount (mounted in the header), which invalidates this query
+  const { data, isLoading } = useQuery({ queryKey: ['chat-rooms'], queryFn: getRooms });
 
-  const rooms = roomsData?.data || [];
-
-  // Listen for new messages to update the last message and unread count
-  useEffect(() => {
-    if (!socket) return;
-
-    const handleNewMessage = (message: IMessage) => {
-      queryClient.setQueryData(['chat-rooms'], (oldData: any) => {
-        if (!oldData?.data) return oldData;
-        
-        const updatedRooms = oldData.data.map((room: IChatRoom) => {
-          if (room.id === message.roomId) {
-            return {
-              ...room,
-              lastMessage: message.messageText,
-              updatedAt: message.createdAt,
-              // If it's not the active room and we aren't the sender, increment unread count
-              unreadCount: (activeRoomId !== room.id && message.senderId !== user?.id) 
-                ? (room.unreadCount || 0) + 1 
-                : room.unreadCount
-            };
-          }
-          return room;
-        });
-
-        // Sort to bring the updated room to the top
-        updatedRooms.sort((a: IChatRoom, b: IChatRoom) => 
-          new Date(b.updatedAt || b.createdAt).getTime() - new Date(a.updatedAt || a.createdAt).getTime()
-        );
-
-        return { ...oldData, data: updatedRooms };
-      });
-    };
-
-    socket.on('new_message', handleNewMessage);
-    
-    return () => {
-      socket.off('new_message', handleNewMessage);
-    };
-  }, [socket, queryClient, activeRoomId, user?.id]);
-
-  if (isLoading) {
-    return <LoadingSpinner />;
-  }
+  const rooms = useMemo(() => {
+    const list = data?.data || [];
+    const q = filter.trim().toLowerCase();
+    if (!q) return list;
+    return list.filter((room) => {
+      const other = room.sellerId === user?.id ? room.buyer : room.seller;
+      return `${other?.displayName || ''} ${room.listing?.title || ''}`.toLowerCase().includes(q);
+    });
+  }, [data, filter, user?.id]);
 
   return (
-    <div className="chat-rooms-list">
-      <div className="chat-rooms-header">
-        <h2>মেসেজ</h2>
+    <div className="rooms">
+      <div className="rooms__head">
+        <h2>মেসেজ <span className={`rooms__status ${isConnected ? 'is-online' : ''}`} title={isConnected ? 'সংযুক্ত' : 'সংযোগ হচ্ছে…'} /></h2>
+        <label className="rooms__search">
+          <Search size={16} aria-hidden="true" />
+          <input value={filter} onChange={(e) => setFilter(e.target.value)} placeholder="নাম বা বিজ্ঞাপন খুঁজুন" aria-label="চ্যাট খুঁজুন" />
+        </label>
       </div>
-      
-      {rooms.length === 0 ? (
-        <div className="chat-rooms-empty">
-          <p>আপনার কোনো চ্যাট হিস্ট্রি নেই</p>
-        </div>
-      ) : (
-        rooms.map(room => {
-          const isSeller = user?.id === room.sellerId;
-          const otherUser = isSeller ? room.buyer : room.seller;
-          
-          return (
-            <Link 
-              key={room.id} 
-              to={`/chat/${room.id}`}
-              className={`chat-room-item ${activeRoomId === room.id ? 'active' : ''}`}
-            >
-              <UserAvatar name={otherUser?.displayName || 'অজ্ঞাত'} size="md" />
-              
-              <div className="chat-room-content">
-                <div className="chat-room-top">
-                  <h3 className="chat-room-name">
-                    {otherUser?.displayName || 'অজ্ঞাত ব্যবহারকারী'}
-                    {otherUser?.isVerified && <VerifiedBadge size="sm" />}
-                  </h3>
-                  <span className="chat-room-time">
-                    {room.updatedAt ? formatRelativeTime(room.updatedAt) : ''}
-                  </span>
+
+      <div className="rooms__list">
+        {isLoading ? (
+          Array.from({ length: 5 }).map((_, i) => <div key={i} className="skeleton rooms__skeleton" />)
+        ) : rooms.length === 0 ? (
+          <div className="rooms__empty">
+            <p>{filter ? 'কিছু পাওয়া যায়নি' : 'এখনো কোনো চ্যাট নেই। কোনো বিজ্ঞাপন থেকে বিক্রেতার সাথে চ্যাট শুরু করুন।'}</p>
+          </div>
+        ) : (
+          rooms.map((room) => {
+            const iAmSeller = room.sellerId === user?.id;
+            const other = iAmSeller ? room.buyer : room.seller;
+            const last = room.lastMessage;
+            const unread = room.unreadCount > 0 && activeRoomId !== room.id;
+
+            return (
+              <Link key={room.id} to={`/chat/${room.id}`} className={`room ${activeRoomId === room.id ? 'active' : ''} ${unread ? 'is-unread' : ''}`}>
+                <div className="room__avatar">
+                  <UserAvatar name={other?.displayName || 'U'} size="md" />
+                  <img src={room.listing?.images?.[0] || PLACEHOLDER_IMAGE} alt="" className="room__thumb" />
                 </div>
-                
-                <div className="chat-room-listing">
-                  {room.listing?.title}
+                <div className="room__body">
+                  <div className="room__top">
+                    <span className="room__name truncate">{other?.displayName || 'অজ্ঞাত'}</span>
+                    <span className="room__time">{formatChatTime(last?.createdAt || room.updatedAt)}</span>
+                  </div>
+                  <div className="room__listing truncate">
+                    <span className="room__role">{iAmSeller ? 'ক্রেতা' : 'বিক্রেতা'}</span> {room.listing?.title}
+                  </div>
+                  <div className="room__bottom">
+                    <span className="room__last truncate">
+                      {last ? `${last.senderId === user?.id ? 'আপনি: ' : ''}${last.messageText}` : 'চ্যাট শুরু করুন 👋'}
+                    </span>
+                    {unread && <span className="room__badge">{formatNumber(room.unreadCount)}</span>}
+                  </div>
                 </div>
-                
-                <div className="chat-room-bottom">
-                  <p className="chat-room-last-msg">
-                    {room.lastMessage || 'কোনো মেসেজ নেই'}
-                  </p>
-                  {room.unreadCount > 0 && activeRoomId !== room.id && (
-                    <span className="chat-room-unread">{room.unreadCount}</span>
-                  )}
-                </div>
-              </div>
-            </Link>
-          );
-        })
-      )}
+              </Link>
+            );
+          })
+        )}
+      </div>
     </div>
   );
 };

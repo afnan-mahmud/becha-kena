@@ -4,7 +4,7 @@
   left: 0;
   width: 100vw;
   height: 100vh;
-  background-color: rgba(0, 0, 0, 0.5);
+  background-color: rgba(15, 31, 24, 0.5);
   backdrop-filter: blur(4px);
   display: flex;
   justify-content: center;
@@ -15,8 +15,8 @@
 
 .modal-content {
   background-color: var(--card-bg);
-  border-radius: var(--border-radius-lg);
-  padding: 2rem;
+  border-radius: var(--radius-2xl);
+  padding: 1.75rem;
   width: 90%;
   max-width: 450px;
   box-shadow: var(--shadow-lg);

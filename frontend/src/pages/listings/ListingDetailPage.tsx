@@ -1,77 +1,61 @@
 import { useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { 
-  MapPin, 
-  Clock, 
-  Phone, 
-  MessageSquare, 
-  Flag, 
-  Share2, 
-  MessageCircle, // Using MessageCircle for WhatsApp for now
-  AlertTriangle 
+import toast from 'react-hot-toast';
+import {
+  MapPin, Clock, Phone, MessageCircle, Flag, Share2, ShieldCheck, AlertTriangle, Tag, CalendarDays, Pencil, ChevronRight,
 } from 'lucide-react';
 import { getListingById, getListings } from '../../services/listing.service';
+import { createRoom } from '../../services/chat.service';
 import { ImageGallery } from '../../components/ui/ImageGallery';
 import { RatingStars } from '../../components/ui/RatingStars';
 import { VerifiedBadge } from '../../components/ui/VerifiedBadge';
+import { UserAvatar } from '../../components/ui/UserAvatar';
 import { ListingCard } from '../../components/ui/ListingCard';
 import { ReportModal } from '../../components/report/ReportModal';
-import { formatPrice, formatRelativeTime } from '../../utils/formatters';
 import { SEOHead } from '../../components/common/SEOHead';
+import { useAuthStore } from '../../store/authStore';
+import { useRequireVerified } from '../../hooks/useAuth';
+import { formatDate, formatPrice, formatRelativeTime, getErrorMessage } from '../../utils/formatters';
+import { getCategory, getConditionLabel } from '../../utils/constants';
+import { formatLocation, getSeller, getSellerId } from '../../utils/listing';
 import './ListingDetailPage.css';
 
 export const ListingDetailPage = () => {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+  const { user, isAuthenticated, isVerified } = useAuthStore();
+  const requireVerified = useRequireVerified();
 
   const [showPhone, setShowPhone] = useState(false);
-  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+  const [isReportOpen, setIsReportOpen] = useState(false);
+  const [isStartingChat, setIsStartingChat] = useState(false);
 
   const { data, isLoading, error } = useQuery({
-    queryKey: ['listing', id],
+    queryKey: ['listing', id, isAuthenticated, isVerified],
     queryFn: () => getListingById(id as string),
-    enabled: !!id
+    enabled: !!id,
   });
 
   const listing = data?.data;
 
   const { data: relatedData } = useQuery({
-    queryKey: ['relatedListings', listing?.category],
-    queryFn: () => getListings({ category: listing?.category, limit: 4 }),
-    enabled: !!listing?.category
+    queryKey: ['listings', 'related', listing?.category],
+    queryFn: () => getListings({ category: listing?.category, limit: 5 }),
+    enabled: !!listing?.category,
   });
 
-  const relatedListings = relatedData?.data?.items?.filter(item => item.id !== id) || [];
-
-  const handleChatClick = () => {
-    // Check auth and verification here in real app
-    // navigate('/chat/new/' + listing.id);
-    alert('চ্যাট ফিচারটি এখনো তৈরি করা হয়নি (Chat feature coming soon)');
-  };
-
-  const handleShare = (platform: string) => {
-    const url = window.location.href;
-    if (platform === 'copy') {
-      navigator.clipboard.writeText(url);
-      alert('লিংক কপি করা হয়েছে');
-    } else if (platform === 'facebook') {
-      window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`, '_blank');
-    } else if (platform === 'whatsapp') {
-      window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(url)}`, '_blank');
-    }
-  };
+  const related = (relatedData?.data?.listings || []).filter((item) => item.id !== id).slice(0, 4);
 
   if (isLoading) {
     return (
-      <div className="container detail-page loading-skeleton">
-        <div className="skeleton-row">
-          <div className="skeleton-col-left">
-            <div className="skeleton-box" style={{ height: '400px' }}></div>
-          </div>
-          <div className="skeleton-col-right">
-            <div className="skeleton-box" style={{ height: '40px', marginBottom: '20px' }}></div>
-            <div className="skeleton-box" style={{ height: '200px', marginBottom: '20px' }}></div>
-            <div className="skeleton-box" style={{ height: '150px' }}></div>
+      <div className="container detail">
+        <div className="detail__layout">
+          <div className="skeleton" style={{ aspectRatio: '4 / 3', borderRadius: 20 }} />
+          <div>
+            <div className="skeleton" style={{ height: 36, width: '60%' }} />
+            <div className="skeleton" style={{ height: 22, width: '90%', marginTop: 16 }} />
+            <div className="skeleton" style={{ height: 180, marginTop: 24, borderRadius: 20 }} />
           </div>
         </div>
       </div>
@@ -80,178 +64,218 @@ export const ListingDetailPage = () => {
 
   if (error || !listing) {
     return (
-      <div className="container error-page">
-        <h2>বিজ্ঞাপনটি পাওয়া যায়নি</h2>
-        <p>আপনি যে বিজ্ঞাপনটি খুঁজছেন তা মুছে ফেলা হয়েছে বা মেয়াদ শেষ হয়ে গেছে।</p>
-        <Link to="/listings" className="btn btn-primary">সব বিজ্ঞাপন দেখুন</Link>
+      <div className="container detail">
+        <div className="empty-state" style={{ marginTop: 40 }}>
+          <div style={{ fontSize: 44 }} aria-hidden="true">🫥</div>
+          <h2>বিজ্ঞাপনটি পাওয়া যায়নি</h2>
+          <p>বিজ্ঞাপনটি মুছে ফেলা হয়েছে, বিক্রি হয়ে গেছে বা এখনো রিভিউতে আছে।</p>
+          <Link to="/listings" className="btn btn-primary mt-4">সব বিজ্ঞাপন দেখুন</Link>
+        </div>
       </div>
     );
   }
 
+  const seller = getSeller(listing);
+  const sellerId = getSellerId(listing);
+  const isOwner = !!user && user.id === sellerId;
   const isSold = listing.status === 'sold';
-  const conditionLabel = listing.condition === 'New' ? 'নতুন' : listing.condition === 'Like New' ? 'প্রায় নতুন' : 'ব্যবহৃত';
+  const category = getCategory(listing.category);
+  const condition = getConditionLabel(listing.condition);
+  const canContact = listing.status === 'active' && !isOwner;
+
+  const handleChat = async () => {
+    if (!requireVerified(`/listings/${listing.id}`)) {
+      if (isAuthenticated) toast('চ্যাট করতে আগে NID দিয়ে যাচাই করুন', { icon: '🪪' });
+      return;
+    }
+    setIsStartingChat(true);
+    try {
+      const res = await createRoom(listing.id);
+      navigate(`/chat/${res.data.id}`);
+    } catch (err) {
+      toast.error(getErrorMessage(err, 'চ্যাট শুরু করা যায়নি'));
+    } finally {
+      setIsStartingChat(false);
+    }
+  };
+
+  const handleShowPhone = () => {
+    if (!requireVerified(`/listings/${listing.id}`)) {
+      if (isAuthenticated) toast('ফোন নম্বর দেখতে আগে NID দিয়ে যাচাই করুন', { icon: '🪪' });
+      return;
+    }
+    setShowPhone(true);
+  };
+
+  const handleReport = () => {
+    if (requireVerified(`/listings/${listing.id}`)) setIsReportOpen(true);
+  };
+
+  const handleShare = async () => {
+    const url = window.location.href;
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: listing.title, text: `${listing.title} — ${formatPrice(listing.price)}`, url });
+      } else {
+        await navigator.clipboard.writeText(url);
+        toast.success('লিংক কপি করা হয়েছে');
+      }
+    } catch {
+      /* user cancelled share */
+    }
+  };
+
+  const phone = seller?.phoneNumber ? seller.phoneNumber.replace(/^\+88/, '') : null;
 
   return (
-    <div className="detail-page container">
-      <SEOHead 
-        title={`${listing.title} — ৳${listing.price} — Becha-Kena`}
+    <div className="container detail">
+      <SEOHead
+        title={`${listing.title} — ${formatPrice(listing.price)} — বেচা-কেনা`}
         description={listing.description.substring(0, 160)}
         ogImage={listing.images[0]}
       />
-      <div className="detail-layout">
-        {/* Left Column - Gallery & Description */}
-        <div className="detail-main">
+
+      <nav className="detail__crumbs" aria-label="Breadcrumb">
+        <Link to="/">হোম</Link>
+        <ChevronRight size={14} />
+        <Link to="/listings">বিজ্ঞাপন</Link>
+        {category && (
+          <>
+            <ChevronRight size={14} />
+            <Link to={`/listings?category=${encodeURIComponent(category.value)}`}>{category.label}</Link>
+          </>
+        )}
+      </nav>
+
+      {listing.status !== 'active' && !isSold && (
+        <div className="detail__notice">
+          <AlertTriangle size={18} />
+          {listing.status === 'pending'
+            ? 'এই বিজ্ঞাপনটি মডারেশনের অপেক্ষায় আছে — শুধু আপনি দেখতে পাচ্ছেন।'
+            : 'এই বিজ্ঞাপনটি আর্কাইভ করা — অন্য কেউ দেখতে পাচ্ছে না।'}
+        </div>
+      )}
+
+      <div className="detail__layout">
+        <div className="detail__main">
           <ImageGallery images={listing.images} isSold={isSold} />
-          
-          <div className="detail-description-card mt-4">
-            <h3>বিবরণ</h3>
-            <div className="description-content">
-              {listing.description.split('\n').map((paragraph, idx) => (
-                <p key={idx}>{paragraph}</p>
-              ))}
+
+          <section className="detail__card">
+            <h2 className="detail__h">বিস্তারিত বিবরণ</h2>
+            <dl className="detail__specs">
+              {category && <div><dt><Tag size={15} /> ক্যাটাগরি</dt><dd>{category.emoji} {category.label}</dd></div>}
+              {condition && <div><dt><ShieldCheck size={15} /> অবস্থা</dt><dd>{condition}</dd></div>}
+              <div><dt><MapPin size={15} /> এলাকা</dt><dd>{formatLocation(listing, 3)}</dd></div>
+              <div><dt><CalendarDays size={15} /> পোস্ট</dt><dd>{formatDate(listing.createdAt)}</dd></div>
+            </dl>
+            <div className="detail__desc">
+              {listing.description.split('\n').map((p, i) => <p key={i}>{p}</p>)}
             </div>
-          </div>
+          </section>
         </div>
 
-        {/* Right Column - Info, Seller, Actions */}
-        <div className="detail-sidebar">
-          <div className="product-info-card">
-            <div className="badges-row">
-              <span className="badge condition-badge">{conditionLabel}</span>
-              <span className="badge category-badge">{listing.category}</span>
+        <aside className="detail__side">
+          <section className="detail__card detail__summary">
+            <div className="detail__badges">
+              {condition && <span className="badge badge-green">{condition}</span>}
+              {isSold && <span className="badge badge-red">বিক্রি হয়ে গেছে</span>}
             </div>
-            
-            <h1 className="product-title">{listing.title}</h1>
-            <div className="product-price">{formatPrice(listing.price)}</div>
-            
-            <div className="product-meta">
-              <div className="meta-item">
-                <MapPin size={16} />
-                <span>{listing.location.thana}, {listing.location.district}, {listing.location.division}</span>
-              </div>
-              <div className="meta-item">
-                <Clock size={16} />
-                <span>পোস্ট করা হয়েছে {formatRelativeTime(listing.createdAt)}</span>
-              </div>
+            <h1 className="detail__title">{listing.title}</h1>
+            <div className="detail__price">{formatPrice(listing.price)}</div>
+            <div className="detail__meta">
+              <span><MapPin size={15} /> {formatLocation(listing)}</span>
+              <span><Clock size={15} /> {formatRelativeTime(listing.createdAt)}</span>
             </div>
 
-            {/* Actions */}
-            <div className="action-buttons">
-              <button 
-                className="btn btn-primary btn-block action-btn" 
-                onClick={handleChatClick}
-                disabled={isSold}
-              >
-                <MessageSquare size={18} />
-                চ্যাট করুন
-              </button>
-              
-              {!listing.hidePhoneNumber ? (
-                showPhone ? (
-                  <a href={`tel:${listing.seller?.phoneNumber}`} className="btn btn-outline btn-block action-btn">
-                    <Phone size={18} />
-                    {listing.seller?.phoneNumber || '01XXXXXXXXX'}
-                  </a>
+            {isOwner ? (
+              <div className="detail__actions">
+                <Link to={`/listings/${listing.id}/edit`} className="btn btn-primary btn-block"><Pencil size={18} /> বিজ্ঞাপন এডিট করুন</Link>
+                <Link to="/dashboard/my-listings" className="btn btn-outline btn-block">আমার বিজ্ঞাপনগুলো</Link>
+              </div>
+            ) : canContact ? (
+              <div className="detail__actions">
+                <button type="button" className="btn btn-primary btn-lg btn-block" onClick={handleChat} disabled={isStartingChat}>
+                  <MessageCircle size={20} /> {isStartingChat ? 'চ্যাট খোলা হচ্ছে…' : 'বিক্রেতার সাথে চ্যাট করুন'}
+                </button>
+
+                {listing.hidePhoneNumber ? (
+                  <p className="detail__chat-only">🔒 বিক্রেতা শুধু চ্যাটে যোগাযোগ করতে চান</p>
+                ) : showPhone && phone ? (
+                  <a href={`tel:${phone}`} className="btn btn-outline btn-lg btn-block detail__phone"><Phone size={18} /> {phone}</a>
                 ) : (
-                  <button className="btn btn-outline btn-block action-btn" onClick={() => setShowPhone(true)}>
-                    <Phone size={18} />
-                    ফোন নম্বর দেখুন
+                  <button type="button" className="btn btn-outline btn-lg btn-block" onClick={handleShowPhone}>
+                    <Phone size={18} /> ফোন নম্বর দেখুন
                   </button>
-                )
-              ) : (
-                <div className="chat-only-notice">
-                  শুধুমাত্র চ্যাটে যোগাযোগ করুন
-                </div>
+                )}
+              </div>
+            ) : null}
+
+            <div className="detail__secondary">
+              <button type="button" className="btn btn-ghost btn-sm" onClick={handleShare}><Share2 size={16} /> শেয়ার</button>
+              {!isOwner && (
+                <button type="button" className="btn btn-ghost btn-sm detail__report" onClick={handleReport}><Flag size={16} /> রিপোর্ট</button>
               )}
             </div>
+          </section>
 
-            {/* Share and Report */}
-            <div className="secondary-actions">
-              <button className="text-link-sm flex-center gap-1" onClick={() => setIsReportModalOpen(true)}>
-                <Flag size={14} /> রিপোর্ট করুন
-              </button>
-              
-              <div className="share-actions">
-                <span>শেয়ার:</span>
-
-                <button className="icon-btn-sm" onClick={() => handleShare('whatsapp')} title="Share on WhatsApp"><MessageCircle size={16} /></button>
-                <button className="icon-btn-sm" onClick={() => handleShare('copy')} title="Copy Link"><Share2 size={16} /></button>
-              </div>
-            </div>
-          </div>
-
-          {/* Seller Card */}
-          {listing.seller && (
-            <div className="seller-info-card">
-              <h3>সেলার সম্পর্কে</h3>
-              <div className="seller-profile">
-                <div className="seller-avatar">
-                  {listing.seller.displayName?.charAt(0) || 'U'}
+          {seller && (
+            <section className="detail__card detail__seller">
+              <h2 className="detail__h">বিক্রেতা</h2>
+              <Link to={`/user/${sellerId}`} className="detail__seller-row">
+                <UserAvatar name={seller.displayName || 'U'} size="lg" />
+                <div>
+                  <div className="detail__seller-name">{seller.displayName}</div>
+                  {seller.isVerified && <VerifiedBadge size="sm" />}
                 </div>
-                <div className="seller-details">
-                  <div className="seller-name-row">
-                    <span className="seller-name">{listing.seller.displayName}</span>
-                    {listing.seller.isVerified && <VerifiedBadge size="sm" />}
-                  </div>
-                  {listing.seller.verifiedName && (
-                    <div className="verified-name-text">আইনত যাচাইকৃত: {listing.seller.verifiedName}</div>
-                  )}
-                  <div className="seller-rating">
-                    <RatingStars 
-                      rating={listing.seller.averageRating} 
-                      count={listing.seller.totalReviews} 
-                      showCount 
-                      size="sm" 
-                    />
-                  </div>
-                </div>
-              </div>
-              <Link to={`/user/${listing.sellerId}`} className="btn btn-outline btn-block mt-3">
-                সেলারের সব বিজ্ঞাপন দেখুন
               </Link>
-            </div>
+              {seller.verifiedName && <p className="detail__legal">আইনগত নাম: <strong>{seller.verifiedName}</strong></p>}
+              <div className="detail__seller-stats">
+                <div>
+                  <RatingStars rating={seller.averageRating} size="sm" />
+                  <span>{seller.totalReviews > 0 ? `${seller.averageRating.toFixed(1)} (${seller.totalReviews} রিভিউ)` : 'এখনো রিভিউ নেই'}</span>
+                </div>
+                {seller.createdAt && <div><CalendarDays size={14} /> সদস্য: {formatDate(seller.createdAt)}</div>}
+              </div>
+              <Link to={`/user/${sellerId}`} className="btn btn-outline btn-block btn-sm">প্রোফাইল ও অন্যান্য বিজ্ঞাপন</Link>
+            </section>
           )}
 
-          {/* Map Preview Placeholder */}
-          <div className="map-card">
-            <h3>লোকেশন ম্যাপ</h3>
-            <div className="map-placeholder">
-              <img src="https://via.placeholder.com/400x200?text=Map+Preview" alt="Map Preview" />
+          <section className="detail__safety">
+            <AlertTriangle size={20} />
+            <div>
+              <strong>নিরাপত্তা টিপস</strong>
+              <p>জনবহুল জায়গায় দেখা করুন, পণ্য দেখে তারপর টাকা দিন। কখনো অগ্রিম টাকা পাঠাবেন না।</p>
             </div>
+          </section>
+        </aside>
+      </div>
+
+      {related.length > 0 && (
+        <section className="section">
+          <div className="section-head">
+            <h2>একই ধরনের আরো বিজ্ঞাপন</h2>
+            <Link to={`/listings?category=${encodeURIComponent(listing.category)}`} className="section-link">সব দেখুন</Link>
           </div>
-        </div>
-      </div>
-
-      {/* Safety Banner */}
-      <div className="safety-banner mt-4">
-        <AlertTriangle size={24} className="safety-icon" />
-        <div>
-          <h4>নিরাপত্তা পরামর্শ</h4>
-          <p>সর্বদা জনবহুল জায়গায় দেখা করুন। অগ্রিম পেমেন্ট করবেন না। যেকোনো প্রতারণামূলক কার্যকলাপ রিপোর্ট করুন।</p>
-        </div>
-      </div>
-
-      {/* Related Listings */}
-      {relatedListings.length > 0 && (
-        <div className="related-listings-section mt-5">
-          <h2 className="section-title">সম্পর্কিত বিজ্ঞাপন</h2>
           <div className="listings-grid">
-            {relatedListings.slice(0, 4).map(item => (
-              <ListingCard key={item.id} listing={item} />
-            ))}
+            {related.map((item) => <ListingCard key={item.id} listing={item} />)}
           </div>
+        </section>
+      )}
+
+      {/* Sticky contact bar on phones */}
+      {canContact && (
+        <div className="detail__mobile-bar">
+          <div>
+            <div className="detail__mobile-price">{formatPrice(listing.price)}</div>
+            <div className="detail__mobile-title truncate">{listing.title}</div>
+          </div>
+          <button type="button" className="btn btn-primary" onClick={handleChat} disabled={isStartingChat}>
+            <MessageCircle size={18} /> চ্যাট
+          </button>
         </div>
       )}
 
-      {/* Report Modal */}
-      {listing && (
-        <ReportModal 
-          isOpen={isReportModalOpen} 
-          onClose={() => setIsReportModalOpen(false)} 
-          targetType="listing" 
-          targetId={listing.id} 
-        />
-      )}
+      <ReportModal isOpen={isReportOpen} onClose={() => setIsReportOpen(false)} targetType="Listing" targetId={listing.id} />
     </div>
   );
 };

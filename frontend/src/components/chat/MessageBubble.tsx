@@ -1,35 +1,19 @@
-import { format } from 'date-fns';
+import { memo } from 'react';
 import { Check, CheckCheck } from 'lucide-react';
+import { format } from 'date-fns';
 import type { IMessage } from '../../types';
 import './MessageBubble.css';
 
-interface MessageBubbleProps {
-  message: IMessage;
-  isOwn: boolean;
-}
-
-export const MessageBubble = ({ message, isOwn }: MessageBubbleProps) => {
-  const timeString = message.createdAt 
-    ? format(new Date(message.createdAt), 'hh:mm a') 
-    : '';
-
-  return (
-    <div className={`message-bubble-wrapper ${isOwn ? 'own' : 'other'}`}>
-      <div className={`message-bubble ${isOwn ? 'own' : 'other'}`}>
-        {message.messageText}
-      </div>
-      <div className="message-meta">
-        <span>{timeString}</span>
-        {isOwn && (
-          <span className="message-status">
-            {message.readStatus ? (
-              <CheckCheck size={14} color="var(--primary-color)" />
-            ) : (
-              <Check size={14} />
-            )}
-          </span>
-        )}
-      </div>
+export const MessageBubble = memo(({ message, isOwn }: { message: IMessage; isOwn: boolean }) => (
+  <div className={`bubble-row ${isOwn ? 'is-own' : ''}`}>
+    <div className="bubble">
+      <p>{message.messageText}</p>
+      <span className="bubble__meta">
+        {format(new Date(message.createdAt), 'h:mm a')}
+        {isOwn && (message.readStatus ? <CheckCheck size={14} className="bubble__read" /> : <Check size={14} />)}
+      </span>
     </div>
-  );
-};
+  </div>
+));
+
+MessageBubble.displayName = 'MessageBubble';

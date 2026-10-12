@@ -4,7 +4,9 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
+  background-color: rgba(15, 31, 24, 0.5);
+  backdrop-filter: blur(3px);
+  padding: 16px;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -14,7 +16,7 @@
 
 .review-modal-container {
   background-color: var(--bg-white);
-  border-radius: 1rem;
+  border-radius: var(--radius-2xl);
   width: 100%;
   max-width: 500px;
   max-height: 90vh;
