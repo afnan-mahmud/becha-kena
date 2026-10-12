@@ -4,7 +4,7 @@ import User from '../models/User';
 import { AppError } from '../utils/AppError';
 
 export const getProfile = async (userId: string) => {
-  const user = await User.findById(userId).select('-tokenVersion -fcmTokens');
+  const user = await User.findById(userId).select('-tokenVersion -fcmTokens -parentNIDHash');
   if (!user) {
     throw new AppError('User not found', 404, 'NOT_FOUND');
   }
