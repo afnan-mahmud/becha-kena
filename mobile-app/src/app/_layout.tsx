@@ -1,9 +1,10 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import {
   useFonts,
   HindSiliguri_400Regular,
@@ -15,6 +16,17 @@ import { useAuthStore } from '@/store/auth.store';
 
 // Prevent splash screen from auto-hiding until bootstrap & fonts are ready
 SplashScreen.preventAutoHideAsync().catch(() => {});
+
+// Global QueryClient instance
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 2,
+      staleTime: 1000 * 60, // 1 minute
+      refetchOnWindowFocus: false,
+    },
+  },
+});
 
 export default function RootLayout() {
   const [fontsLoaded, fontError] = useFonts({
@@ -44,16 +56,18 @@ export default function RootLayout() {
   }
 
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <SafeAreaProvider>
-        <StatusBar style="auto" />
-        <Stack screenOptions={{ headerShown: false }}>
-          <Stack.Screen name="index" />
-          <Stack.Screen name="(auth)" />
-          <Stack.Screen name="(app)" />
-          <Stack.Screen name="+not-found" options={{ headerShown: true, title: 'Not Found' }} />
-        </Stack>
-      </SafeAreaProvider>
-    </GestureHandlerRootView>
+    <QueryClientProvider client={queryClient}>
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <SafeAreaProvider>
+          <StatusBar style="auto" />
+          <Stack screenOptions={{ headerShown: false }}>
+            <Stack.Screen name="index" />
+            <Stack.Screen name="(auth)" />
+            <Stack.Screen name="(app)" />
+            <Stack.Screen name="+not-found" options={{ headerShown: true, title: 'Not Found' }} />
+          </Stack>
+        </SafeAreaProvider>
+      </GestureHandlerRootView>
+    </QueryClientProvider>
   );
 }

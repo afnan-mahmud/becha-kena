@@ -1,6 +1,24 @@
 import { View, Text, StyleSheet } from 'react-native';
+import { KYCStatusBanner } from '@/components/kyc/KYCStatusBanner';
+import { useAuthStore } from '@/store/auth.store';
 
 export default function PostScreen() {
+  const isVerified = useAuthStore((state) => state.user?.isVerified ?? false);
+
+  // Show KYC guard if user is not verified
+  if (!isVerified) {
+    return (
+      <View style={styles.container}>
+        <Text style={styles.guardIcon}>🛡️</Text>
+        <Text style={styles.title}>বিজ্ঞাপন দিতে যাচাই করুন</Text>
+        <Text style={styles.subtitle}>
+          বিজ্ঞাপন পোস্ট করতে আগে আপনার পরিচয় যাচাই সম্পন্ন করতে হবে।
+        </Text>
+        <KYCStatusBanner />
+      </View>
+    );
+  }
+
   return (
     <View style={styles.container}>
       <Text style={styles.title}>বিজ্ঞাপন পোস্ট করুন</Text>
@@ -19,17 +37,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#F7F5F0',
     padding: 24,
+    gap: 12,
   },
+  guardIcon: { fontSize: 48, marginBottom: 4 },
   title: {
-    fontSize: 24,
+    fontSize: 22,
     fontWeight: 'bold',
     color: '#1B2420',
-    marginBottom: 8,
+    textAlign: 'center',
   },
   subtitle: {
     fontSize: 15,
     color: '#5B6660',
-    marginBottom: 24,
+    textAlign: 'center',
+    lineHeight: 22,
   },
   placeholderBox: {
     backgroundColor: '#FFFFFF',

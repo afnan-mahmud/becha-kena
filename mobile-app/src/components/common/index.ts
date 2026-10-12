@@ -1,2 +1,1 @@
-// Common Components
-export {};
+export * from './CategoryScroll';

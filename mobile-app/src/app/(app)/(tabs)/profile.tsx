@@ -1,5 +1,6 @@
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
+import { KYCStatusBanner } from '@/components/kyc/KYCStatusBanner';
 
 export default function ProfileScreen() {
   const router = useRouter();
@@ -15,6 +16,8 @@ export default function ProfileScreen() {
           <Text style={styles.userPhone}>+880 1XXXXXXXXX</Text>
         </View>
       </View>
+
+      <KYCStatusBanner showVerifiedBadge />
 
       <View style={styles.menuGroup}>
         <TouchableOpacity

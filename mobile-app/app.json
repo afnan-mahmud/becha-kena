@@ -33,7 +33,23 @@
           "imageWidth": 76
         }
       ],
-      "expo-secure-store"
+      "expo-secure-store",
+      "@react-native-community/datetimepicker",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "বেচা-কেনা অ্যাপ আপনার পরিচয় যাচাইয়ের জন্য সেলফি তুলতে ক্যামেরা ব্যবহার করে।",
+          "microphonePermission": false,
+          "recordAudioAndroid": false
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "বেচা-কেনা অ্যাপ আপনার ফটো লাইব্রেরি থেকে KYC যাচাইয়ের জন্য ছবি নির্বাচন করতে পারে।",
+          "cameraPermission": "বেচা-কেনা অ্যাপ আপনার পরিচয় যাচাইয়ের জন্য সেলফি তুলতে ক্যামেরা ব্যবহার করে।"
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,
