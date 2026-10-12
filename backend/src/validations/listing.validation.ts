@@ -7,10 +7,10 @@ export const createListingSchema: ValidationSchema = {
     price: { required: true, type: 'number', min: 0 },
     category: { required: true, type: 'string' },
     condition: { required: true, type: 'string', enum: ['new', 'like_new', 'used'] },
-    images: { 
-      required: true, 
+    images: {
+      required: true,
       type: 'array',
-      custom: (val) => Array.isArray(val) && val.length > 0 ? true : 'images array must not be empty'
+      custom: (val) => Array.isArray(val) && val.length > 0 && val.length <= 10 ? true : 'images must contain 1 to 10 image URLs'
     },
     'location.coordinates': {
       required: true,

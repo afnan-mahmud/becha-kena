@@ -1,3 +1,4 @@
+import mongoose from 'mongoose';
 import { Report } from '../models/Report';
 import User from '../models/User';
 import Listing from '../models/Listing';
@@ -11,6 +12,16 @@ export const submitReport = async (
   reason: string,
   description: string
 ) => {
+  if (!mongoose.isValidObjectId(targetId)) {
+    throw new AppError('Report target not found', 404, 'NOT_FOUND');
+  }
+
+  // One open report per reporter + target is enough
+  const duplicate = await Report.exists({ reporterId, targetType, targetId, status: 'pending' });
+  if (duplicate) {
+    throw new AppError('You have already reported this. Our team is reviewing it.', 409, 'DUPLICATE_REPORT');
+  }
+
   // Validate the target exists
   if (targetType === 'User') {
     const user = await User.findById(targetId);
@@ -25,6 +36,9 @@ export const submitReport = async (
     const listing = await Listing.findById(targetId);
     if (!listing) {
       throw new AppError('Target listing not found', 404, 'NOT_FOUND');
+    }
+    if (String(listing.sellerId) === String(reporterId)) {
+      throw new AppError('You cannot report your own listing.', 400, 'BAD_REQUEST');
     }
   } else {
     throw new AppError('Invalid targetType. Must be Listing or User.', 400, 'BAD_REQUEST');

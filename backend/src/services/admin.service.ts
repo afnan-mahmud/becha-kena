@@ -27,7 +27,7 @@ export const getUsers = async (page: number = 1, limit: number = 20) => {
   const skip = (page - 1) * limit;
 
   const users = await User.find()
-    .select('-password -__v') // Exclude sensitive info
+    .select('-tokenVersion -fcmTokens -parentNIDHash -__v') // Exclude sensitive info
     .sort({ createdAt: -1 })
     .skip(skip)
     .limit(limit);
@@ -94,6 +94,7 @@ export const getManualVerificationQueue = async (page: number = 1, limit: number
   const skip = (page - 1) * limit;
 
   const logs = await VerificationLog.find({ verificationStatus: 'pending_review' })
+    .select('-nidHash')
     .populate('userId', 'displayName phoneNumber')
     .sort({ createdAt: 1 })
     .skip(skip)
@@ -108,11 +109,21 @@ export const getManualVerificationQueue = async (page: number = 1, limit: number
 export const resolveVerification = async (
   logId: string,
   moderatorId: string,
-  action: 'approve' | 'reject'
+  action: 'approve' | 'reject',
+  options: { verifiedName?: string; reason?: string } = {}
 ) => {
-  const log = await VerificationLog.findById(logId).populate('userId');
+  const log = await VerificationLog.findById(logId);
   if (!log) {
     throw new AppError('Verification log not found', 404, 'NOT_FOUND');
+  }
+
+  if (log.verificationStatus !== 'pending_review') {
+    throw new AppError('This verification request has already been resolved', 400, 'ALREADY_RESOLVED');
+  }
+
+  const user = await User.findById(log.userId);
+  if (!user) {
+    throw new AppError('User not found', 404, 'NOT_FOUND');
   }
 
   const session = await mongoose.startSession();
@@ -123,20 +134,29 @@ export const resolveVerification = async (
       log.verificationStatus = 'approved';
       log.verifiedBy = new mongoose.Types.ObjectId(moderatorId);
       
-      await User.findByIdAndUpdate(
-        log.userId,
-        {
-          isVerified: true,
-          // In a real flow, verifiedName and ageGroup should be pulled from the Porichoy response stored in the log
-          // Hardcoding defaults here as placeholders
-          verifiedName: 'Verified User', 
-          ageGroup: 'adult', 
-        },
-        { session }
-      );
+      log.manualReviewReason = null;
+
+      // The moderator types the legal name exactly as printed on the NID
+      // (a Porichoy API integration would fill this automatically).
+      const update: Record<string, any> = {
+        isVerified: true,
+        verifiedName: options.verifiedName?.trim() || user.displayName,
+        ageGroup: log.verificationType === 'minor' ? 'minor' : 'adult',
+      };
+
+      if (log.verificationType === 'minor') {
+        const minorTransitionDueDate = new Date(log.dob);
+        minorTransitionDueDate.setFullYear(minorTransitionDueDate.getFullYear() + 18);
+        minorTransitionDueDate.setDate(minorTransitionDueDate.getDate() + 30);
+        update.parentNIDHash = log.nidHash;
+        update.minorTransitionDueDate = minorTransitionDueDate;
+      }
+
+      await User.findByIdAndUpdate(log.userId, update, { session });
     } else if (action === 'reject') {
       log.verificationStatus = 'rejected';
       log.verifiedBy = new mongoose.Types.ObjectId(moderatorId);
+      log.manualReviewReason = options.reason?.trim() || 'The submitted information could not be verified';
     }
 
     await log.save({ session });

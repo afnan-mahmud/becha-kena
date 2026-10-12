@@ -1,11 +1,19 @@
+// Debug helper: prints the 3 latest listings and their image URLs.
+// Usage: MONGODB_URI="mongodb+srv://..." node check.js
 const { MongoClient } = require('mongodb');
-const uri = 'mongodb://afnanmahmudsecond_db_user:9K4plUeyuFYNxim9@ac-uastugo-shard-00-00.nurjpmu.mongodb.net:27017,ac-uastugo-shard-00-01.nurjpmu.mongodb.net:27017,ac-uastugo-shard-00-02.nurjpmu.mongodb.net:27017/?ssl=true&replicaSet=atlas-jk5x83-shard-0&authSource=admin&appName=Cluster0';
+require('dotenv').config();
+
+const uri = process.env.MONGODB_URI;
+if (!uri) {
+  console.error('Set MONGODB_URI (e.g. in backend/.env) before running this script.');
+  process.exit(1);
+}
 
 async function main() {
   const client = new MongoClient(uri);
   try {
     await client.connect();
-    const db = client.db('test'); // Or whatever DB name it is
+    const db = client.db();
     const listings = db.collection('listings');
     const latest = await listings.find().sort({ createdAt: -1 }).limit(3).toArray();
     latest.forEach(doc => {

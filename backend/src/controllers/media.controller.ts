@@ -14,7 +14,13 @@ export const getPresignedUrl = async (
       return next(new AppError('fileName and fileType are required', 400, 'BAD_REQUEST'));
     }
 
-    const targetFolder = folder || 'listings';
+    // Only known top-level folders are allowed; files always land under the user's id
+    const ALLOWED_FOLDERS = ['listings', 'kyc', 'avatars'];
+    const baseFolder = String(folder || 'listings').split('/')[0];
+    if (!ALLOWED_FOLDERS.includes(baseFolder)) {
+      return next(new AppError(`folder must be one of: ${ALLOWED_FOLDERS.join(', ')}`, 400, 'BAD_REQUEST'));
+    }
+    const targetFolder = `${baseFolder}/${req.user!._id.toString()}`;
 
     const { uploadUrl, fileUrl } = await generatePresignedUploadUrl(
       fileName,

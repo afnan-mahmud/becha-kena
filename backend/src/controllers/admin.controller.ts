@@ -80,7 +80,10 @@ export const resolveVerification = async (req: Request, res: Response, next: Nex
       throw new AppError('Action must be approve or reject', 400, 'BAD_REQUEST');
     }
 
-    const log = await adminService.resolveVerification(logId, moderatorId, action);
+    const log = await adminService.resolveVerification(logId, moderatorId, action, {
+      verifiedName: req.body.verifiedName,
+      reason: req.body.reason,
+    });
     sendSuccess(res, 200, `Verification ${action}d successfully`, log);
   } catch (error) {
     next(error);

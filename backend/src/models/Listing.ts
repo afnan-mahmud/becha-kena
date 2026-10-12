@@ -33,7 +33,7 @@ const listingSchema = new Schema<IListing>(
   {
     sellerId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     title: { type: String, required: true, trim: true, minlength: 10, maxlength: 80 },
-    description: { type: String, required: true, minlength: 50, maxlength: 500 },
+    description: { type: String, required: true, minlength: 20, maxlength: 1000 },
     price: { type: Number, required: true, min: 0 },
     category: { type: String, required: true },
     condition: { type: String, enum: ['new', 'like_new', 'used'] },

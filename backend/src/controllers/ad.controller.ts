@@ -21,7 +21,11 @@ export const getListings = async (req: Request, res: Response, next: NextFunctio
 
 export const getListingById = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const listing = await adService.getListingById(req.params.id as string, req.user?._id?.toString());
+    const listing = await adService.getListingById(req.params.id as string, {
+      id: req.user?._id?.toString(),
+      isVerified: req.user?.isVerified,
+      role: req.user?.role,
+    });
     res.status(200).json({ success: true, data: listing });
   } catch (error) {
     next(error);
@@ -39,7 +43,7 @@ export const updateListing = async (req: Request, res: Response, next: NextFunct
 
 export const markAsSold = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const listing = await adService.markAsSold(req.params.id as string, req.user!._id, req.body.buyerId);
+    const listing = await adService.markAsSold(req.params.id as string, req.user!._id, req.body?.buyerId);
     res.status(200).json({ success: true, data: listing });
   } catch (error) {
     next(error);

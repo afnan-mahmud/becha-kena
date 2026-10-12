@@ -4,6 +4,49 @@ import Message from '../models/Message';
 import Listing from '../models/Listing';
 import { AppError } from '../utils/AppError';
 import { sanitizeMessage } from '../utils/chatFilters';
+import { withIds, toIdString } from '../utils/serialize';
+
+const LISTING_PREVIEW_FIELDS = 'title images price status soldToBuyerId sellerId';
+const USER_PREVIEW_FIELDS = 'displayName verifiedName isVerified';
+
+/**
+ * Flattens a populated ChatRoom into a stable API shape:
+ * ids are plain strings and the populated docs live in `listing`, `buyer`, `seller`.
+ */
+export const serializeRoom = (room: any) => {
+  const plain = withIds(typeof room.toObject === 'function' ? room.toObject() : room);
+  const listing = plain.listingId && typeof plain.listingId === 'object' ? plain.listingId : null;
+  const buyer = plain.buyerId && typeof plain.buyerId === 'object' ? plain.buyerId : null;
+  const seller = plain.sellerId && typeof plain.sellerId === 'object' ? plain.sellerId : null;
+
+  return {
+    ...plain,
+    id: toIdString(plain._id),
+    listingId: toIdString(plain.listingId),
+    buyerId: toIdString(plain.buyerId),
+    sellerId: toIdString(plain.sellerId),
+    listing: listing
+      ? { ...listing, soldToBuyerId: listing.soldToBuyerId ? toIdString(listing.soldToBuyerId) : null, sellerId: toIdString(listing.sellerId) }
+      : null,
+    buyer,
+    seller,
+  };
+};
+
+/**
+ * Flattens a message: `senderId` and `roomId` are plain strings, populated sender lives in `sender`.
+ */
+export const serializeMessage = (message: any) => {
+  const plain = withIds(typeof message.toObject === 'function' ? message.toObject() : message);
+  const sender = plain.senderId && typeof plain.senderId === 'object' ? plain.senderId : null;
+  return {
+    ...plain,
+    id: toIdString(plain._id),
+    roomId: toIdString(plain.roomId),
+    senderId: toIdString(plain.senderId),
+    sender,
+  };
+};
 
 /**
  * Gets an existing chat room or creates a new one between buyer, seller, and listing
@@ -13,6 +56,10 @@ export const getOrCreateRoom = async (
   sellerId: string | Types.ObjectId,
   listingId: string | Types.ObjectId
 ) => {
+  if (!Types.ObjectId.isValid(String(listingId))) {
+    throw new AppError('Listing not found', 404, 'LISTING_NOT_FOUND');
+  }
+
   // 1. Validate listing exists and is active
   const listing = await Listing.findById(listingId);
   if (!listing) {
@@ -37,11 +84,11 @@ export const getOrCreateRoom = async (
     { $setOnInsert: { buyerId, sellerId: actualSellerId, listingId } },
     { upsert: true, new: true, setDefaultsOnInsert: true }
   )
-    .populate('listingId', 'title images price status')
-    .populate('buyerId', 'displayName verifiedName isVerified')
-    .populate('sellerId', 'displayName verifiedName isVerified');
+    .populate('listingId', LISTING_PREVIEW_FIELDS)
+    .populate('buyerId', USER_PREVIEW_FIELDS)
+    .populate('sellerId', USER_PREVIEW_FIELDS);
 
-  return room;
+  return serializeRoom(room);
 };
 
 /**
@@ -51,9 +98,9 @@ export const getRoomsForUser = async (userId: string | Types.ObjectId) => {
   const rooms = await ChatRoom.find({
     $or: [{ buyerId: userId }, { sellerId: userId }],
   })
-    .populate('listingId', 'title images price status')
-    .populate('buyerId', 'displayName verifiedName isVerified')
-    .populate('sellerId', 'displayName verifiedName isVerified')
+    .populate('listingId', LISTING_PREVIEW_FIELDS)
+    .populate('buyerId', USER_PREVIEW_FIELDS)
+    .populate('sellerId', USER_PREVIEW_FIELDS)
     .lean();
 
   const roomsWithDetails = await Promise.all(
@@ -71,8 +118,8 @@ export const getRoomsForUser = async (userId: string | Types.ObjectId) => {
       const latestActivity = lastMessage?.createdAt || room.updatedAt || room.createdAt;
 
       return {
-        ...room,
-        lastMessage: lastMessage || null,
+        ...serializeRoom(room),
+        lastMessage: lastMessage ? serializeMessage(lastMessage) : null,
         unreadCount,
         latestActivity,
       };
@@ -96,6 +143,10 @@ export const getMessages = async (
   page: number | string = 1,
   limit: number | string = 50
 ) => {
+  if (!Types.ObjectId.isValid(String(roomId))) {
+    throw new AppError('Chat room not found', 404, 'ROOM_NOT_FOUND');
+  }
+
   const room = await ChatRoom.findById(roomId);
   if (!room) {
     throw new AppError('Chat room not found', 404, 'ROOM_NOT_FOUND');
@@ -119,7 +170,7 @@ export const getMessages = async (
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(parsedLimit)
-      .populate('senderId', 'displayName verifiedName isVerified')
+      .populate('senderId', USER_PREVIEW_FIELDS)
       .lean(),
     Message.countDocuments({ roomId }),
   ]);
@@ -131,7 +182,8 @@ export const getMessages = async (
   );
 
   return {
-    messages,
+    // Newest first — reverse on the client for display
+    messages: messages.map(serializeMessage),
     total,
     page: parsedPage,
     totalPages: Math.ceil(total / parsedLimit) || 1,
@@ -146,6 +198,10 @@ export const sendMessage = async (
   senderId: string | Types.ObjectId,
   messageText: string
 ) => {
+  if (!Types.ObjectId.isValid(String(roomId))) {
+    throw new AppError('Chat room not found', 404, 'ROOM_NOT_FOUND');
+  }
+
   const room = await ChatRoom.findById(roomId);
   if (!room) {
     throw new AppError('Chat room not found', 404, 'ROOM_NOT_FOUND');
@@ -165,6 +221,10 @@ export const sendMessage = async (
     throw new AppError('Message text cannot be empty', 400, 'EMPTY_MESSAGE');
   }
 
+  if (sanitizedText.length > 1000) {
+    throw new AppError('Message is too long (max 1000 characters)', 400, 'MESSAGE_TOO_LONG');
+  }
+
   const message = await Message.create({
     roomId,
     senderId,
@@ -176,11 +236,12 @@ export const sendMessage = async (
   await ChatRoom.findByIdAndUpdate(roomId, { updatedAt: new Date() });
 
   const populatedMessage = await Message.findById(message._id)
-    .populate('senderId', 'displayName verifiedName isVerified')
+    .populate('senderId', USER_PREVIEW_FIELDS)
     .lean();
 
   return {
-    message: populatedMessage || message,
+    message: serializeMessage(populatedMessage || message),
+    room,
     warnings,
   };
 };

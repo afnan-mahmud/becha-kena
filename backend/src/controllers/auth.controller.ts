@@ -54,8 +54,12 @@ export const verifyOTP = async (req: Request, res: Response, next: NextFunction)
       status: 'success',
       success: true,
       message: 'Verified successfully',
+      // Tokens are also returned in the body so that non-browser clients
+      // (the mobile app) can store them and send `Authorization: Bearer`.
       data: {
         user,
+        accessToken,
+        refreshToken,
       },
     });
   } catch (error) {
@@ -86,7 +90,8 @@ export const logout = async (req: Request, res: Response, next: NextFunction) =>
 
 export const refreshToken = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const token = req.cookies?.refreshToken;
+    // Web sends the refresh token as a cookie, mobile sends it in the body
+    const token = req.cookies?.refreshToken || req.body?.refreshToken;
     if (!token) {
       return next(new AppError('Refresh token missing', 401, 'TOKEN_MISSING'));
     }
