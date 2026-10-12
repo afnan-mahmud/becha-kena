@@ -11,6 +11,10 @@ export const submitReview = async (
   rating: number,
   reviewText: string
 ) => {
+  if (!mongoose.isValidObjectId(listingId)) {
+    throw new AppError('Listing not found', 404, 'NOT_FOUND');
+  }
+
   // Step 1: Find the listing
   const listing = await Listing.findById(listingId);
   if (!listing) {
@@ -99,10 +103,17 @@ export const submitReview = async (
 };
 
 export const getReviewsForUser = async (userId: string, page: number = 1, limit: number = 20) => {
+  if (!mongoose.isValidObjectId(userId)) {
+    throw new AppError('Invalid user id', 400, 'INVALID_ID');
+  }
+
+  limit = Math.min(Math.max(limit, 1), 50);
+  page = Math.max(page, 1);
   const skip = (page - 1) * limit;
 
   const reviews = await Review.find({ revieweeId: userId })
-    .populate('reviewerId', 'displayName')
+    .populate('reviewerId', 'displayName isVerified')
+    .populate('listingId', 'title images price')
     .sort({ createdAt: -1 })
     .skip(skip)
     .limit(limit);
@@ -112,5 +123,11 @@ export const getReviewsForUser = async (userId: string, page: number = 1, limit:
   const user = await User.findById(userId).select('averageRating');
   const averageRating = user ? user.averageRating : 0;
 
-  return { reviews, total, averageRating };
+  return {
+    reviews,
+    total,
+    page,
+    totalPages: Math.ceil(total / limit) || 1,
+    averageRating,
+  };
 };

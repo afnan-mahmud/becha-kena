@@ -3,6 +3,7 @@ import mongoose, { Schema, Document, Model } from 'mongoose';
 export interface ITemporaryOtp extends Document {
   phoneNumber: string;
   otpCode: string;
+  attempts: number;
   expiresAt: Date;
   createdAt: Date;
   updatedAt: Date;
@@ -18,6 +19,10 @@ const temporaryOtpSchema = new Schema<ITemporaryOtp>(
     otpCode: {
       type: String,
       required: true,
+    },
+    attempts: {
+      type: Number,
+      default: 0,
     },
     expiresAt: {
       type: Date,

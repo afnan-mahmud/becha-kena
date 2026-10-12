@@ -1,61 +1,55 @@
-.chat-page-container {
+.chat-shell { padding-block: var(--space-md); }
+
+.chat-page {
   display: flex;
-  height: calc(100vh - 64px); /* Assuming header is 64px */
-  max-width: 1200px;
-  margin: 0 auto;
-  background-color: var(--bg-white);
-  border-left: 1px solid var(--border-color);
-  border-right: 1px solid var(--border-color);
+  height: calc(100dvh - var(--header-height) - 64px - 2 * var(--space-md));
+  min-height: 480px;
+  background: #fff;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
   overflow: hidden;
 }
 
-.chat-rooms-panel {
-  flex: 0 0 35%;
-  min-width: 300px;
-  max-width: 400px;
-  border-right: 1px solid var(--border-color);
-  height: 100%;
+.chat-page__rooms {
+  flex: 0 0 340px;
+  border-right: 1px solid var(--color-border);
+  min-height: 0;
 }
 
-.chat-conv-panel {
-  flex: 1;
-  height: 100%;
-}
+.chat-page__conv { flex: 1; min-width: 0; min-height: 0; }
 
 .chat-placeholder {
+  height: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  height: 100%;
-  color: var(--text-secondary);
-  background-color: var(--bg-secondary);
+  gap: 4px;
+  padding: var(--space-xl);
+  text-align: center;
+  background: var(--color-bg-subtle);
 }
 
-.chat-placeholder p {
-  margin-top: 1rem;
-  font-size: 1.125rem;
+.chat-placeholder h2 { font-size: 1.3rem; margin: 10px 0 0; }
+.chat-placeholder p { max-width: 380px; }
+
+.chat-placeholder__icon {
+  display: grid;
+  place-items: center;
+  width: 84px;
+  height: 84px;
+  border-radius: 28px;
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
 }
 
-/* Mobile Responsive */
 @media (max-width: 768px) {
-  .chat-page-container {
-    height: calc(100vh - 64px); /* Adjust based on mobile header/nav */
-    border: none;
+  .chat-shell { padding: 0; }
+  .chat-page {
+    height: calc(100dvh - 118px - var(--bottom-nav-height));
+    border-radius: 0;
+    border-inline: none;
   }
-
-  .chat-rooms-panel {
-    flex: 1;
-    max-width: none;
-    min-width: 0;
-  }
-
-  .chat-conv-panel {
-    flex: 1;
-    min-width: 0;
-  }
-
-  .hide-on-mobile {
-    display: none !important;
-  }
+  .chat-page__rooms { flex: 1; border-right: none; }
+  .hide-on-mobile { display: none !important; }
 }

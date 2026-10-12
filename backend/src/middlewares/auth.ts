@@ -11,9 +11,21 @@ declare global {
   }
 }
 
+/**
+ * Reads the access token from the httpOnly cookie (web) or the
+ * `Authorization: Bearer <token>` header (mobile app).
+ */
+export const extractAccessToken = (req: Request): string | undefined => {
+  const header = req.headers.authorization;
+  if (header && header.startsWith('Bearer ')) {
+    return header.slice(7).trim() || undefined;
+  }
+  return req.cookies?.accessToken;
+};
+
 export const authenticate = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const token = req.cookies?.accessToken;
+    const token = extractAccessToken(req);
     
     if (!token) {
       return next(new AppError('Authentication token missing', 401, 'TOKEN_MISSING'));
@@ -35,16 +47,17 @@ export const authenticate = async (req: Request, res: Response, next: NextFuncti
       return next(new AppError('Your account has been suspended', 403, 'ACCOUNT_SUSPENDED'));
     }
 
-    // Reactivate user if they were inactive
-    if (user.status === 'inactive') {
-      user.status = 'active';
-      user.lastLoginDate = new Date();
-      await user.save();
-    }
-
     // Token version check to ensure token hasn't been revoked
     if (payload.tokenVersion !== user.tokenVersion) {
       return next(new AppError('Token has been revoked', 401, 'TOKEN_EXPIRED'));
+    }
+
+    // Reactivate user if they were inactive (logging back in also cancels a pending deletion)
+    if (user.status === 'inactive') {
+      user.status = 'active';
+      user.deletionRequestedAt = null;
+      user.lastLoginDate = new Date();
+      await user.save();
     }
 
     // Attach user to request object
@@ -59,12 +72,18 @@ export const authenticate = async (req: Request, res: Response, next: NextFuncti
 };
 
 export const optionalAuth = async (req: Request, res: Response, next: NextFunction) => {
-  const token = req.cookies?.accessToken;
-  
+  const token = extractAccessToken(req);
+
   if (!token) {
     return next();
   }
 
-  // If token is found, validate it just like authenticate
-  return authenticate(req, res, next);
+  // A stale/invalid token on a public route should not block the request —
+  // treat the visitor as a guest instead.
+  return authenticate(req, res, (err?: any) => {
+    if (err) {
+      req.user = undefined;
+    }
+    next();
+  });
 };

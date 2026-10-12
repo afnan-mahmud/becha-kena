@@ -1,418 +1,280 @@
-import { useState, useEffect } from 'react';
-import { useSearchParams, Link } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
-import { 
-  Filter, 
-  Grid, 
-  List as ListIcon, 
-  X, 
-  ChevronRight,
-  Search
-} from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
+import { useQuery, keepPreviousData } from '@tanstack/react-query';
+import { SlidersHorizontal, LayoutGrid, List as ListIcon, X, Search, RotateCcw } from 'lucide-react';
 import { getListings } from '../../services/listing.service';
-import { ListingCard } from '../../components/ui/ListingCard';
+import { ListingCard, ListingCardSkeleton } from '../../components/ui/ListingCard';
 import { ListingCardList } from '../../components/ui/ListingCardList';
 import { Pagination } from '../../components/common/Pagination';
-import { useDebounce } from '../../hooks/useDebounce';
-import { ListingCategory, ListingCondition } from '../../types';
-import { DIVISIONS, DISTRICTS, THANAS } from '../../utils/locations';
 import { SEOHead } from '../../components/common/SEOHead';
+import { useDebounce } from '../../hooks/useDebounce';
+import { CATEGORIES, CONDITIONS, SORT_OPTIONS, getCategoryLabel, getConditionLabel } from '../../utils/constants';
+import { DIVISIONS, DISTRICTS, THANAS } from '../../utils/locations';
+import { formatNumber, formatPrice } from '../../utils/formatters';
+import type { ListingConditionValue, ListingSort } from '../../types';
 import './BrowseListingsPage.css';
 
+const PAGE_SIZE = 12;
+const FILTER_KEYS = ['search', 'category', 'condition', 'minPrice', 'maxPrice', 'division', 'district', 'thana', 'sort'] as const;
+
 export const BrowseListingsPage = () => {
-  const [searchParams, setSearchParams] = useSearchParams();
-  
-  // View state
+  const [params, setParams] = useSearchParams();
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
-  const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
-  
-  // Filter state
-  const [searchQuery, setSearchQuery] = useState(searchParams.get('search') || '');
-  const [selectedCategories, setSelectedCategories] = useState<string[]>(
-    searchParams.getAll('category') || (searchParams.get('category') ? [searchParams.get('category') as string] : [])
-  );
-  const [minPrice, setMinPrice] = useState(searchParams.get('minPrice') || '');
-  const [maxPrice, setMaxPrice] = useState(searchParams.get('maxPrice') || '');
-  const [selectedConditions, setSelectedConditions] = useState<string[]>(searchParams.getAll('condition'));
-  
-  // Location state
-  const [division, setDivision] = useState(searchParams.get('division') || '');
-  const [district, setDistrict] = useState(searchParams.get('district') || '');
-  const [thana, setThana] = useState(searchParams.get('thana') || '');
-  
-  // Sort & Pagination state
-  const [sortBy, setSortBy] = useState('latest');
-  const [currentPage, setCurrentPage] = useState(Number(searchParams.get('page')) || 1);
-  const limit = 12;
+  const [filtersOpen, setFiltersOpen] = useState(false);
 
-  // Debounce search and price
-  const debouncedSearch = useDebounce(searchQuery, 500);
-  const debouncedMinPrice = useDebounce(minPrice, 500);
-  const debouncedMaxPrice = useDebounce(maxPrice, 500);
+  // The URL is the single source of truth for filters
+  const get = (key: string) => params.get(key) || '';
+  const page = Math.max(1, Number(params.get('page')) || 1);
 
-  // Update URL params when filters change
+  const update = (changes: Record<string, string | undefined>, resetPage = true) => {
+    const next = new URLSearchParams(params);
+    Object.entries(changes).forEach(([k, v]) => (v ? next.set(k, v) : next.delete(k)));
+    if (resetPage) next.delete('page');
+    setParams(next, { replace: true });
+  };
+
+  // Free-text fields are debounced before they hit the URL / API
+  const [searchText, setSearchText] = useState(get('search'));
+  const [minPrice, setMinPrice] = useState(get('minPrice'));
+  const [maxPrice, setMaxPrice] = useState(get('maxPrice'));
+  const debouncedSearch = useDebounce(searchText, 450);
+  const debouncedMin = useDebounce(minPrice, 450);
+  const debouncedMax = useDebounce(maxPrice, 450);
+
+  useEffect(() => { setSearchText(params.get('search') || ''); }, [params.get('search')]); // eslint-disable-line react-hooks/exhaustive-deps
+
   useEffect(() => {
-    const params = new URLSearchParams();
-    
-    if (debouncedSearch) params.set('search', debouncedSearch);
-    if (debouncedMinPrice) params.set('minPrice', debouncedMinPrice);
-    if (debouncedMaxPrice) params.set('maxPrice', debouncedMaxPrice);
-    
-    selectedCategories.forEach(cat => params.append('category', cat));
-    selectedConditions.forEach(cond => params.append('condition', cond));
-    
-    if (division) params.set('division', division);
-    if (district) params.set('district', district);
-    if (thana) params.set('thana', thana);
-    
-    if (currentPage > 1) params.set('page', currentPage.toString());
-    
-    setSearchParams(params, { replace: true });
-  }, [
-    debouncedSearch, 
-    debouncedMinPrice, 
-    debouncedMaxPrice, 
-    selectedCategories, 
-    selectedConditions,
-    division,
-    district,
-    thana,
-    currentPage,
-    setSearchParams
-  ]);
+    if (debouncedSearch !== get('search') || debouncedMin !== get('minPrice') || debouncedMax !== get('maxPrice')) {
+      update({ search: debouncedSearch.trim() || undefined, minPrice: debouncedMin || undefined, maxPrice: debouncedMax || undefined });
+    }
+  }, [debouncedSearch, debouncedMin, debouncedMax]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Fetch data
-  const { data, isLoading, error } = useQuery({
-    queryKey: ['listings', { 
-      search: debouncedSearch, 
-      categories: selectedCategories, 
-      minPrice: debouncedMinPrice, 
-      maxPrice: debouncedMaxPrice,
-      conditions: selectedConditions,
-      division,
-      district,
-      thana,
-      sortBy,
-      page: currentPage 
-    }],
-    queryFn: () => getListings({
-      search: debouncedSearch,
-      category: selectedCategories.length === 1 ? selectedCategories[0] : undefined, // Simplify for mock api
-      minPrice: debouncedMinPrice ? Number(debouncedMinPrice) : undefined,
-      maxPrice: debouncedMaxPrice ? Number(debouncedMaxPrice) : undefined,
-      page: currentPage,
-      limit,
-      status: 'active'
-    }),
+  const filters = useMemo(() => ({
+    search: get('search') || undefined,
+    category: get('category') || undefined,
+    condition: (get('condition') || undefined) as ListingConditionValue | undefined,
+    minPrice: get('minPrice') ? Number(get('minPrice')) : undefined,
+    maxPrice: get('maxPrice') ? Number(get('maxPrice')) : undefined,
+    division: get('division') || undefined,
+    district: get('district') || undefined,
+    thana: get('thana') || undefined,
+    sort: (get('sort') || 'newest') as ListingSort,
+    page,
+    limit: PAGE_SIZE,
+  }), [params]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const { data, isLoading, isFetching, isError, refetch } = useQuery({
+    queryKey: ['listings', 'browse', filters],
+    queryFn: () => getListings(filters),
+    placeholderData: keepPreviousData,
   });
 
-  const listings = data?.data?.items || [];
-  const totalItems = data?.data?.total || 0;
+  const listings = data?.data?.listings || [];
+  const total = data?.data?.total || 0;
   const totalPages = data?.data?.totalPages || 1;
 
-  // Handlers
-  const toggleCategory = (category: string) => {
-    setCurrentPage(1);
-    setSelectedCategories(prev => 
-      prev.includes(category) 
-        ? prev.filter(c => c !== category)
-        : [...prev, category]
-    );
+  const activeChips = [
+    filters.category && { key: 'category', label: getCategoryLabel(filters.category) },
+    filters.condition && { key: 'condition', label: getConditionLabel(filters.condition) },
+    filters.division && { key: 'division', label: [filters.thana, filters.district, filters.division].filter(Boolean).join(', ') },
+    (filters.minPrice !== undefined || filters.maxPrice !== undefined) && {
+      key: 'price',
+      label: `${filters.minPrice !== undefined ? formatPrice(filters.minPrice) : '৳০'} – ${filters.maxPrice !== undefined ? formatPrice(filters.maxPrice) : 'যেকোনো'}`,
+    },
+  ].filter(Boolean) as { key: string; label: string }[];
+
+  const removeChip = (key: string) => {
+    if (key === 'division') return update({ division: undefined, district: undefined, thana: undefined });
+    if (key === 'price') {
+      setMinPrice('');
+      setMaxPrice('');
+      return update({ minPrice: undefined, maxPrice: undefined });
+    }
+    update({ [key]: undefined });
   };
 
-  const toggleCondition = (condition: string) => {
-    setCurrentPage(1);
-    setSelectedConditions(prev => 
-      prev.includes(condition) 
-        ? prev.filter(c => c !== condition)
-        : [...prev, condition]
-    );
-  };
-
-  const resetFilters = () => {
-    setSearchQuery('');
-    setSelectedCategories([]);
+  const resetAll = () => {
+    setSearchText('');
     setMinPrice('');
     setMaxPrice('');
-    setSelectedConditions([]);
-    setDivision('');
-    setDistrict('');
-    setThana('');
-    setCurrentPage(1);
-    setSortBy('latest');
+    const next = new URLSearchParams(params);
+    FILTER_KEYS.forEach((k) => next.delete(k));
+    next.delete('page');
+    setParams(next, { replace: true });
   };
 
-  const handleDivisionChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setDivision(e.target.value);
-    setDistrict('');
-    setThana('');
-    setCurrentPage(1);
-  };
+  // Lock page scroll while the mobile filter sheet is open
+  useEffect(() => {
+    document.body.style.overflow = filtersOpen ? 'hidden' : '';
+    return () => { document.body.style.overflow = ''; };
+  }, [filtersOpen]);
 
-  const handleDistrictChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setDistrict(e.target.value);
-    setThana('');
-    setCurrentPage(1);
-  };
-
-  const breadcrumbCategory = selectedCategories.length === 1 ? selectedCategories[0] : 'সকল বিজ্ঞাপন';
+  const title = filters.category ? getCategoryLabel(filters.category) : filters.search ? `"${filters.search}" এর ফলাফল` : 'সব বিজ্ঞাপন';
 
   return (
-    <div className="browse-page container">
-      <SEOHead 
-        title="Browse Listings — Becha-Kena" 
-        description="Browse all available items on Becha-Kena. Find what you need at the best prices."
-      />
-      {/* Mobile Filter Button */}
-      <div className="mobile-filter-bar">
-        <div className="search-bar-mobile">
-          <Search size={18} />
-          <input 
-            type="text" 
-            placeholder="কী খুঁজছেন?" 
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+    <div className="browse container">
+      <SEOHead title={`${title} — বেচা-কেনা`} description="বাংলাদেশ জুড়ে যাচাইকৃত বিক্রেতাদের বিজ্ঞাপন দেখুন।" />
+
+      <div className="browse__top">
+        <div>
+          <h1 className="browse__title">{title}</h1>
+          <p className="browse__count">
+            {isLoading ? 'খোঁজা হচ্ছে…' : `${formatNumber(total)}টি বিজ্ঞাপন পাওয়া গেছে`}
+          </p>
+        </div>
+
+        <div className="browse__search">
+          <Search size={18} aria-hidden="true" />
+          <input
+            type="search"
+            value={searchText}
+            onChange={(e) => setSearchText(e.target.value)}
+            placeholder="এই পেজে খুঁজুন…"
+            aria-label="বিজ্ঞাপন খুঁজুন"
           />
         </div>
-        <button 
-          className="btn btn-outline filter-toggle-btn"
-          onClick={() => setIsMobileFilterOpen(true)}
-        >
-          <Filter size={18} />
-          ফিল্টার
-        </button>
       </div>
 
-      <div className="browse-layout">
-        {/* Sidebar Filters */}
-        <aside className={`filter-sidebar ${isMobileFilterOpen ? 'mobile-open' : ''}`}>
-          <div className="filter-header-mobile">
-            <h3>ফিল্টার করুন</h3>
-            <button className="icon-btn" onClick={() => setIsMobileFilterOpen(false)}>
-              <X size={24} />
+      <div className="browse__layout">
+        {filtersOpen && <div className="browse__backdrop" onClick={() => setFiltersOpen(false)} />}
+
+        <aside className={`filters ${filtersOpen ? 'is-open' : ''}`} aria-label="ফিল্টার">
+          <div className="filters__head">
+            <h2><SlidersHorizontal size={18} /> ফিল্টার</h2>
+            <button type="button" className="text-link-sm" onClick={resetAll}><RotateCcw size={14} /> রিসেট</button>
+            <button type="button" className="icon-btn filters__close" onClick={() => setFiltersOpen(false)} aria-label="বন্ধ করুন">
+              <X size={20} />
             </button>
           </div>
 
-          <div className="filter-section">
-            <div className="filter-section-header">
-              <h4>ক্যাটাগরি</h4>
-              {selectedCategories.length > 0 && (
-                <button className="text-link-sm" onClick={() => setSelectedCategories([])}>ক্লিয়ার</button>
-              )}
-            </div>
-            <div className="filter-options checkbox-list">
-              {Object.values(ListingCategory).map((cat) => (
-                <label key={cat} className="checkbox-label">
-                  <input 
-                    type="checkbox" 
-                    checked={selectedCategories.includes(cat)}
-                    onChange={() => toggleCategory(cat)}
-                  />
-                  <span>{cat}</span>
-                </label>
+          <div className="filters__section">
+            <h3>ক্যাটাগরি</h3>
+            <div className="filters__cats">
+              <button type="button" className={`filters__cat ${!filters.category ? 'active' : ''}`} onClick={() => update({ category: undefined })}>
+                🗂️ সব ক্যাটাগরি
+              </button>
+              {CATEGORIES.map((cat) => (
+                <button
+                  type="button"
+                  key={cat.value}
+                  className={`filters__cat ${filters.category === cat.value ? 'active' : ''}`}
+                  onClick={() => update({ category: cat.value })}
+                >
+                  <span aria-hidden="true">{cat.emoji}</span> {cat.label}
+                </button>
               ))}
             </div>
           </div>
 
-          <div className="filter-section">
-            <div className="filter-section-header">
-              <h4>মূল্য (৳)</h4>
-              {(minPrice || maxPrice) && (
-                <button className="text-link-sm" onClick={() => { setMinPrice(''); setMaxPrice(''); }}>ক্লিয়ার</button>
-              )}
-            </div>
-            <div className="price-inputs">
-              <input 
-                type="number" 
-                placeholder="সর্বনিম্ন" 
-                value={minPrice}
-                onChange={(e) => { setMinPrice(e.target.value); setCurrentPage(1); }}
-                className="input"
-              />
-              <span>-</span>
-              <input 
-                type="number" 
-                placeholder="সর্বোচ্চ" 
-                value={maxPrice}
-                onChange={(e) => { setMaxPrice(e.target.value); setCurrentPage(1); }}
-                className="input"
-              />
-            </div>
-          </div>
-
-          <div className="filter-section">
-            <h4>অবস্থা</h4>
-            <div className="filter-options checkbox-list">
-              {Object.entries(ListingCondition).map(([key, val]) => {
-                const label = key === 'New' ? 'নতুন' : key === 'LikeNew' ? 'প্রায় নতুন' : 'ব্যবহৃত';
-                return (
-                  <label key={val} className="checkbox-label">
-                    <input 
-                      type="checkbox" 
-                      checked={selectedConditions.includes(val)}
-                      onChange={() => toggleCondition(val)}
-                    />
-                    <span>{label}</span>
-                  </label>
-                );
-              })}
-            </div>
-          </div>
-
-          <div className="filter-section">
-            <h4>লোকেশন</h4>
-            <div className="location-selects">
-              <select className="input" value={division} onChange={handleDivisionChange}>
-                <option value="">সকল বিভাগ</option>
-                {DIVISIONS.map(div => <option key={div} value={div}>{div}</option>)}
+          <div className="filters__section">
+            <h3>অবস্থান</h3>
+            <select className="input" value={filters.division || ''} onChange={(e) => update({ division: e.target.value || undefined, district: undefined, thana: undefined })} aria-label="বিভাগ">
+              <option value="">সব বিভাগ</option>
+              {DIVISIONS.map((d) => <option key={d} value={d}>{d}</option>)}
+            </select>
+            {filters.division && (
+              <select className="input" value={filters.district || ''} onChange={(e) => update({ district: e.target.value || undefined, thana: undefined })} aria-label="জেলা">
+                <option value="">সব জেলা</option>
+                {DISTRICTS[filters.division]?.map((d) => <option key={d} value={d}>{d}</option>)}
               </select>
-              
-              {division && DISTRICTS[division] && (
-                <select className="input" value={district} onChange={handleDistrictChange}>
-                  <option value="">সকল জেলা</option>
-                  {DISTRICTS[division].map(dist => <option key={dist} value={dist}>{dist}</option>)}
-                </select>
-              )}
-              
-              {district && THANAS[district] && (
-                <select className="input" value={thana} onChange={(e) => { setThana(e.target.value); setCurrentPage(1); }}>
-                  <option value="">সকল থানা/এলাকা</option>
-                  {THANAS[district].map(th => <option key={th} value={th}>{th}</option>)}
-                </select>
-              )}
-            </div>
-          </div>
-
-          <div className="filter-actions">
-            <button className="btn btn-primary" onClick={() => setIsMobileFilterOpen(false)}>
-              ফিল্টার প্রয়োগ করুন
-            </button>
-            <button className="btn btn-outline mt-3 w-100" onClick={resetFilters}>
-              ফিল্টার রিসেট
-            </button>
-          </div>
-        </aside>
-
-        {/* Overlay for mobile filter */}
-        {isMobileFilterOpen && (
-          <div className="filter-overlay" onClick={() => setIsMobileFilterOpen(false)}></div>
-        )}
-
-        {/* Main Content */}
-        <main className="browse-content">
-          <div className="content-toolbar">
-            <div className="breadcrumb">
-              <Link to="/">হোম</Link>
-              <ChevronRight size={14} />
-              <Link to="/listings">বিজ্ঞাপন</Link>
-              {selectedCategories.length > 0 && (
-                <>
-                  <ChevronRight size={14} />
-                  <span>{breadcrumbCategory}</span>
-                </>
-              )}
-            </div>
-
-            <div className="toolbar-actions">
-              <div className="result-count">
-                {isLoading ? 'খোঁজা হচ্ছে...' : `${totalItems} টি বিজ্ঞাপন পাওয়া গেছে`}
-              </div>
-              
-              <div className="toolbar-controls">
-                <div className="sort-control">
-                  <span className="hidden-mobile">সাজান:</span>
-                  <select 
-                    className="input-sm" 
-                    value={sortBy} 
-                    onChange={(e) => setSortBy(e.target.value)}
-                  >
-                    <option value="latest">নতুন পোস্ট</option>
-                    <option value="price_asc">কম মূল্য</option>
-                    <option value="price_desc">বেশি মূল্য</option>
-                  </select>
-                </div>
-                
-                <div className="view-toggle hidden-mobile">
-                  <button 
-                    className={`icon-btn ${viewMode === 'grid' ? 'active' : ''}`}
-                    onClick={() => setViewMode('grid')}
-                    title="Grid View"
-                  >
-                    <Grid size={18} />
-                  </button>
-                  <button 
-                    className={`icon-btn ${viewMode === 'list' ? 'active' : ''}`}
-                    onClick={() => setViewMode('list')}
-                    title="List View"
-                  >
-                    <ListIcon size={18} />
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Search bar for desktop */}
-          <div className="desktop-search">
-            <div className="search-input-wrapper">
-              <Search size={20} className="search-icon" />
-              <input 
-                type="text" 
-                placeholder="কী খুঁজছেন? (যেমন: আইফোন, ল্যাপটপ)" 
-                value={searchQuery}
-                onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
-                className="input search-input"
-              />
-              {searchQuery && (
-                <button className="clear-search" onClick={() => { setSearchQuery(''); setCurrentPage(1); }}>
-                  <X size={16} />
-                </button>
-              )}
-            </div>
-          </div>
-
-          {/* Listings Display */}
-          <div className="listings-container">
-            {isLoading ? (
-              <div className={viewMode === 'grid' ? 'listings-grid' : 'listings-list'}>
-                {[...Array(limit)].map((_, i) => (
-                  <div key={i} className="listing-skeleton"></div>
-                ))}
-              </div>
-            ) : error ? (
-              <div className="error-state">
-                <p>লোড করতে সমস্যা হয়েছে। অনুগ্রহ করে আবার চেষ্টা করুন।</p>
-                <button className="btn btn-outline" onClick={() => window.location.reload()}>রিলোড করুন</button>
-              </div>
-            ) : listings.length > 0 ? (
-              <>
-                <div className={viewMode === 'grid' ? 'listings-grid' : 'listings-list'}>
-                  {listings.map(listing => (
-                    viewMode === 'grid' 
-                      ? <ListingCard key={listing.id} listing={listing} />
-                      : <ListingCardList key={listing.id} listing={listing} />
-                  ))}
-                </div>
-                <Pagination 
-                  currentPage={currentPage} 
-                  totalPages={totalPages} 
-                  onPageChange={setCurrentPage} 
-                />
-              </>
-            ) : (
-              <div className="empty-state">
-                <div className="empty-icon">
-                  <Search size={48} />
-                </div>
-                <h3>কোন বিজ্ঞাপন পাওয়া যায়নি</h3>
-                <p>আপনার ফিল্টার পরিবর্তন করে আবার চেষ্টা করুন</p>
-                <button className="btn btn-primary mt-3" onClick={resetFilters}>
-                  ফিল্টার রিসেট করুন
-                </button>
-              </div>
+            )}
+            {filters.district && (
+              <select className="input" value={filters.thana || ''} onChange={(e) => update({ thana: e.target.value || undefined })} aria-label="থানা">
+                <option value="">সব থানা</option>
+                {THANAS[filters.district]?.map((t) => <option key={t} value={t}>{t}</option>)}
+              </select>
             )}
           </div>
-        </main>
+
+          <div className="filters__section">
+            <h3>দাম (৳)</h3>
+            <div className="filters__price">
+              <input type="number" min={0} inputMode="numeric" className="input" placeholder="সর্বনিম্ন" value={minPrice} onChange={(e) => setMinPrice(e.target.value)} aria-label="সর্বনিম্ন দাম" />
+              <span>–</span>
+              <input type="number" min={0} inputMode="numeric" className="input" placeholder="সর্বোচ্চ" value={maxPrice} onChange={(e) => setMaxPrice(e.target.value)} aria-label="সর্বোচ্চ দাম" />
+            </div>
+          </div>
+
+          <div className="filters__section">
+            <h3>পণ্যের অবস্থা</h3>
+            <div className="filters__chips">
+              <button type="button" className={`chip ${!filters.condition ? 'active' : ''}`} onClick={() => update({ condition: undefined })}>সব</button>
+              {CONDITIONS.map((c) => (
+                <button type="button" key={c.value} className={`chip ${filters.condition === c.value ? 'active' : ''}`} onClick={() => update({ condition: c.value })}>
+                  {c.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <button type="button" className="btn btn-primary btn-block filters__apply" onClick={() => setFiltersOpen(false)}>
+            {formatNumber(total)}টি ফলাফল দেখুন
+          </button>
+        </aside>
+
+        <section className="browse__results" aria-busy={isFetching}>
+          <div className="browse__toolbar">
+            <button type="button" className="btn btn-outline btn-sm browse__filter-btn" onClick={() => setFiltersOpen(true)}>
+              <SlidersHorizontal size={16} /> ফিল্টার
+              {activeChips.length > 0 && <span className="browse__filter-count">{formatNumber(activeChips.length)}</span>}
+            </button>
+
+            <div className="browse__chips">
+              {activeChips.map((chip) => (
+                <button type="button" key={chip.key} className="chip active" onClick={() => removeChip(chip.key)}>
+                  {chip.label} <X size={14} />
+                </button>
+              ))}
+            </div>
+
+            <div className="browse__tools">
+              <select className="input input-sm" value={filters.sort} onChange={(e) => update({ sort: e.target.value === 'newest' ? undefined : e.target.value })} aria-label="সাজান">
+                {SORT_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+              </select>
+              <div className="view-toggle" role="group" aria-label="দেখার ধরন">
+                <button type="button" className={viewMode === 'grid' ? 'active' : ''} onClick={() => setViewMode('grid')} aria-label="গ্রিড"><LayoutGrid size={18} /></button>
+                <button type="button" className={viewMode === 'list' ? 'active' : ''} onClick={() => setViewMode('list')} aria-label="লিস্ট"><ListIcon size={18} /></button>
+              </div>
+            </div>
+          </div>
+
+          {isLoading ? (
+            <div className="listings-grid">
+              {Array.from({ length: 8 }).map((_, i) => <ListingCardSkeleton key={i} />)}
+            </div>
+          ) : isError ? (
+            <div className="empty-state">
+              <p>বিজ্ঞাপন লোড করা যায়নি।</p>
+              <button type="button" className="btn btn-outline btn-sm mt-3" onClick={() => refetch()}>আবার চেষ্টা করুন</button>
+            </div>
+          ) : listings.length === 0 ? (
+            <div className="empty-state browse__empty">
+              <div className="browse__empty-emoji" aria-hidden="true">🔍</div>
+              <h3>কোনো বিজ্ঞাপন পাওয়া যায়নি</h3>
+              <p>অন্য কিওয়ার্ড দিয়ে খুঁজুন অথবা কিছু ফিল্টার সরিয়ে দেখুন।</p>
+              {activeChips.length > 0 && <button type="button" className="btn btn-outline btn-sm mt-3" onClick={resetAll}>সব ফিল্টার মুছুন</button>}
+            </div>
+          ) : viewMode === 'grid' ? (
+            <div className={`listings-grid browse__grid ${isFetching ? 'is-fetching' : ''}`}>
+              {listings.map((listing) => <ListingCard key={listing.id} listing={listing} />)}
+            </div>
+          ) : (
+            <div className={`browse__list ${isFetching ? 'is-fetching' : ''}`}>
+              {listings.map((listing) => <ListingCardList key={listing.id} listing={listing} />)}
+            </div>
+          )}
+
+          <div className="browse__pagination">
+            <Pagination
+              currentPage={page}
+              totalPages={totalPages}
+              onPageChange={(p) => {
+                update({ page: p > 1 ? String(p) : undefined }, false);
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+            />
+          </div>
+        </section>
       </div>
     </div>
   );

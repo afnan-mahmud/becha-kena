@@ -1,9 +1,21 @@
 import { Server, Socket } from 'socket.io';
 import { verifyAccessToken } from '../utils/jwt';
 import User from '../models/User';
+import { Types } from 'mongoose';
 import ChatRoom from '../models/ChatRoom';
 import Message from '../models/Message';
 import * as chatService from '../services/chat.service';
+
+/** Every socket also joins a personal channel so it gets messages for rooms it hasn't opened */
+const userChannel = (userId: string) => `user:${userId}`;
+
+const isParticipantOf = async (roomId: string, userId: string) => {
+  if (!roomId || !Types.ObjectId.isValid(roomId)) return null;
+  const room = await ChatRoom.findById(roomId);
+  if (!room) return null;
+  const isParticipant = room.buyerId.toString() === userId || room.sellerId.toString() === userId;
+  return isParticipant ? room : null;
+};
 
 /**
  * Parses raw cookie header string into an object
@@ -74,6 +86,7 @@ export const initializeChatSocket = (io: Server) => {
   chatNamespace.on('connection', (socket: Socket) => {
     const userId = socket.data.userId;
     console.log(`[ChatSocket] User connected: ${userId} (Socket ID: ${socket.id})`);
+    socket.join(userChannel(userId));
 
     // 1. Join Room
     socket.on('join_room', async ({ roomId }: { roomId: string }, callback?: (res: any) => void) => {
@@ -83,18 +96,9 @@ export const initializeChatSocket = (io: Server) => {
           return;
         }
 
-        const room = await ChatRoom.findById(roomId);
+        const room = await isParticipantOf(roomId, userId);
         if (!room) {
-          if (callback) callback({ success: false, error: 'Chat room not found' });
-          return;
-        }
-
-        const isParticipant =
-          room.buyerId.toString() === userId ||
-          room.sellerId.toString() === userId;
-
-        if (!isParticipant) {
-          if (callback) callback({ success: false, error: 'Forbidden: Not a participant' });
+          if (callback) callback({ success: false, error: 'Chat room not found or not a participant' });
           return;
         }
 
@@ -122,8 +126,13 @@ export const initializeChatSocket = (io: Server) => {
 
           const result = await chatService.sendMessage(roomId, userId, messageText);
 
-          // Broadcast new message to all participants in the room
-          chatNamespace.to(roomId).emit('new_message', result.message);
+          // Deliver to everyone viewing the room + both participants' personal channels.
+          // Socket.io de-duplicates, so each socket receives the event exactly once.
+          chatNamespace
+            .to(roomId)
+            .to(userChannel(result.room.buyerId.toString()))
+            .to(userChannel(result.room.sellerId.toString()))
+            .emit('new_message', result.message);
 
           // If safety warnings exist, notify sender
           if (result.warnings && result.warnings.length > 0) {
@@ -134,35 +143,48 @@ export const initializeChatSocket = (io: Server) => {
             });
           }
 
-          if (callback) callback({ success: true, data: result });
+          if (callback) callback({ success: true, data: { message: result.message, warnings: result.warnings } });
         } catch (err: any) {
           console.error('[ChatSocket] send_message error:', err);
           socket.emit('chat_error', {
             message: err.message,
-            code: err.errorCode || 'SEND_ERROR',
+            code: err.code || 'SEND_ERROR',
           });
           if (callback) callback({ success: false, error: err.message });
         }
       }
     );
 
-    // 3. User Typing Indicator
+    // 3. Leave Room (when the conversation screen closes)
+    socket.on('leave_room', ({ roomId }: { roomId: string }) => {
+      if (roomId) socket.leave(roomId);
+    });
+
+    // 4. User Typing Indicator (only relayed inside rooms this socket has joined)
     socket.on('typing', ({ roomId }: { roomId: string }) => {
-      if (!roomId) return;
+      if (!roomId || !socket.rooms.has(roomId)) return;
       socket.to(roomId).emit('user_typing', { roomId, userId });
     });
 
-    // 4. Mark Messages Read
+    // 5. Mark Messages Read
     socket.on('mark_read', async ({ roomId }: { roomId: string }, callback?: (res: any) => void) => {
       try {
-        if (!roomId) return;
+        const room = await isParticipantOf(roomId, userId);
+        if (!room) {
+          if (callback) callback({ success: false, error: 'Chat room not found or not a participant' });
+          return;
+        }
 
         await Message.updateMany(
           { roomId, senderId: { $ne: userId }, readStatus: false },
           { $set: { readStatus: true } }
         );
 
-        chatNamespace.to(roomId).emit('messages_read', { roomId, readBy: userId });
+        chatNamespace
+          .to(roomId)
+          .to(userChannel(room.buyerId.toString()))
+          .to(userChannel(room.sellerId.toString()))
+          .emit('messages_read', { roomId, readBy: userId });
         if (callback) callback({ success: true });
       } catch (err: any) {
         console.error('[ChatSocket] mark_read error:', err);
@@ -170,7 +192,7 @@ export const initializeChatSocket = (io: Server) => {
       }
     });
 
-    // 5. Disconnect
+    // 6. Disconnect
     socket.on('disconnect', (reason) => {
       console.log(`[ChatSocket] User disconnected: ${userId} (Reason: ${reason})`);
     });

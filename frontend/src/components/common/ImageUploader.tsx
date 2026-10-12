@@ -1,12 +1,16 @@
-import { useState, useRef, type ChangeEvent, type DragEvent, type Dispatch, type SetStateAction } from 'react';
-import { Upload, X, AlertCircle } from 'lucide-react';
-import { getPresignedUrl, uploadFileToS3 } from '../../services/media.service';
+import { useRef, useState, type ChangeEvent, type DragEvent, type Dispatch, type SetStateAction } from 'react';
+import { ImagePlus, X, AlertCircle, RotateCw, Star } from 'lucide-react';
+import toast from 'react-hot-toast';
+import { uploadImage } from '../../services/media.service';
+import { formatNumber, getErrorMessage } from '../../utils/formatters';
 import './ImageUploader.css';
 
 export interface ImageFile {
-  file: File;
+  id: string;
+  /** Missing for images that were already uploaded (edit mode) */
+  file?: File;
   previewUrl: string;
-  progress: number;
+  progress: number; // 0 = waiting, 50 = uploading, 100 = done
   uploadedUrl?: string;
   error?: string;
 }
@@ -17,196 +21,130 @@ interface ImageUploaderProps {
   onImagesChange: Dispatch<SetStateAction<ImageFile[]>>;
 }
 
-export const ImageUploader = ({ maxFiles = 5, images, onImagesChange }: ImageUploaderProps) => {
+const ACCEPTED = ['image/jpeg', 'image/png', 'image/webp'];
+const MAX_SIZE_MB = 5;
+
+export const fromUploadedUrls = (urls: string[]): ImageFile[] =>
+  urls.map((url, i) => ({ id: `existing-${i}-${url}`, previewUrl: url, progress: 100, uploadedUrl: url }));
+
+export const ImageUploader = ({ maxFiles = 10, images, onImagesChange }: ImageUploaderProps) => {
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleDragEnter = (e: DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragging(true);
-  };
+  const patch = (id: string, changes: Partial<ImageFile>) =>
+    onImagesChange((prev) => prev.map((img) => (img.id === id ? { ...img, ...changes } : img)));
 
-  const handleDragLeave = (e: DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragging(false);
-  };
-
-  const handleDragOver = (e: DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
+  const upload = async (image: ImageFile) => {
+    if (!image.file) return;
+    patch(image.id, { progress: 50, error: undefined });
+    try {
+      const url = await uploadImage(image.file, 'listings');
+      patch(image.id, { progress: 100, uploadedUrl: url });
+    } catch (err) {
+      patch(image.id, { progress: 0, error: getErrorMessage(err, 'আপলোড ব্যর্থ') });
+    }
   };
 
   const processFiles = (files: FileList | File[]) => {
-    const validFiles = Array.from(files).filter(file => file.type.startsWith('image/'));
-    
-    if (validFiles.length === 0) return;
+    const list = Array.from(files);
+    const valid = list.filter((f) => ACCEPTED.includes(f.type) && f.size <= MAX_SIZE_MB * 1024 * 1024);
+    if (valid.length < list.length) {
+      toast.error(`শুধু JPG/PNG/WebP ছবি, প্রতিটি সর্বোচ্চ ${formatNumber(MAX_SIZE_MB)}MB`);
+    }
 
-    const remainingSlots = maxFiles - images.length;
-    const filesToProcess = validFiles.slice(0, remainingSlots);
+    const slots = maxFiles - images.length;
+    if (valid.length > slots) toast.error(`সর্বোচ্চ ${formatNumber(maxFiles)}টি ছবি দেওয়া যাবে`);
 
-    const newImageFiles: ImageFile[] = filesToProcess.map(file => ({
+    const added: ImageFile[] = valid.slice(0, Math.max(slots, 0)).map((file) => ({
+      id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
       file,
       previewUrl: URL.createObjectURL(file),
       progress: 0,
     }));
 
-    const updatedImages = [...images, ...newImageFiles];
-    onImagesChange(updatedImages);
-
-    // Mock upload process for each new file
-    newImageFiles.forEach((imageFile) => {
-      simulateUpload(imageFile);
-    });
-  };
-
-  const simulateUpload = async (imageFile: ImageFile) => {
-    try {
-      const response = await getPresignedUrl(imageFile.file.name, imageFile.file.type, 'listings');
-      const { uploadUrl, fileUrl } = response.data;
-
-      // Fake progress while uploading
-      let progress = 0;
-      const progressInterval = setInterval(() => {
-        progress += 15;
-        if (progress < 90) {
-          onImagesChange(prev => {
-            const newArr = [...prev];
-            const currentIdx = newArr.findIndex(img => img.previewUrl === imageFile.previewUrl);
-            if (currentIdx !== -1) {
-              newArr[currentIdx] = { ...newArr[currentIdx], progress };
-            }
-            return newArr;
-          });
-        }
-      }, 300);
-
-      await uploadFileToS3(uploadUrl, imageFile.file);
-      clearInterval(progressInterval);
-
-      onImagesChange(prev => {
-        const newArr = [...prev];
-        const currentIdx = newArr.findIndex(img => img.previewUrl === imageFile.previewUrl);
-        if (currentIdx !== -1) {
-          newArr[currentIdx] = {
-            ...newArr[currentIdx],
-            progress: 100,
-            uploadedUrl: fileUrl
-          };
-        }
-        return newArr;
-      });
-    } catch (error) {
-      onImagesChange(prev => {
-        const newArr = [...prev];
-        const currentIdx = newArr.findIndex(img => img.previewUrl === imageFile.previewUrl);
-        if (currentIdx !== -1) {
-          newArr[currentIdx] = {
-            ...newArr[currentIdx],
-            error: 'Upload Failed'
-          };
-        }
-        return newArr;
-      });
-    }
+    if (added.length === 0) return;
+    onImagesChange((prev) => [...prev, ...added]);
+    added.forEach(upload);
   };
 
   const handleDrop = (e: DragEvent<HTMLDivElement>) => {
     e.preventDefault();
-    e.stopPropagation();
     setIsDragging(false);
-    
-    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-      processFiles(e.dataTransfer.files);
-    }
+    if (e.dataTransfer.files?.length) processFiles(e.dataTransfer.files);
   };
 
   const handleFileInput = (e: ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files.length > 0) {
-      processFiles(e.target.files);
-    }
-    // Reset input so selecting the same file again triggers change
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
+    if (e.target.files?.length) processFiles(e.target.files);
+    e.target.value = '';
   };
 
-  const handleRemove = (previewUrl: string) => {
-    const updatedImages = images.filter(img => img.previewUrl !== previewUrl);
-    onImagesChange(updatedImages);
-    URL.revokeObjectURL(previewUrl);
+  const handleRemove = (image: ImageFile) => {
+    onImagesChange((prev) => prev.filter((img) => img.id !== image.id));
+    if (image.file) URL.revokeObjectURL(image.previewUrl);
   };
+
+  const makeCover = (image: ImageFile) =>
+    onImagesChange((prev) => [image, ...prev.filter((img) => img.id !== image.id)]);
 
   return (
     <div className="image-uploader">
-      {images.length < maxFiles && (
-        <div 
-          className={`upload-dropzone ${isDragging ? 'dragging' : ''}`}
-          onDragEnter={handleDragEnter}
-          onDragLeave={handleDragLeave}
-          onDragOver={handleDragOver}
-          onDrop={handleDrop}
-          onClick={() => fileInputRef.current?.click()}
-        >
-          <div className="upload-icon">
-            <Upload size={32} />
-          </div>
-          <p className="upload-text">ছবি আপলোড করতে এখানে ড্র্যাগ করুন</p>
-          <p className="upload-subtext">অথবা ব্রাউজ করতে ক্লিক করুন (সর্বোচ্চ {maxFiles}টি)</p>
-          <button type="button" className="btn btn-outline" onClick={(e) => {
-            e.stopPropagation();
-            fileInputRef.current?.click();
-          }}>
-            ছবি নির্বাচন করুন
-          </button>
-          
-          <input 
-            type="file" 
-            ref={fileInputRef} 
-            onChange={handleFileInput} 
-            accept="image/jpeg, image/png, image/webp" 
-            multiple 
-            className="hidden-input"
-          />
-        </div>
-      )}
+      <div className="uploaded-images-grid">
+        {images.map((img, idx) => (
+          <div key={img.id} className={`uploaded-image-card ${img.error ? 'has-error' : ''}`}>
+            <img src={img.previewUrl} alt={`ছবি ${idx + 1}`} />
+            {idx === 0 && <span className="cover-tag">কভার ছবি</span>}
 
-      {images.length > 0 && (
-        <div className="uploaded-images-grid">
-          {images.map((img, idx) => (
-            <div key={img.previewUrl} className="uploaded-image-card">
-              <div className="image-preview">
-                <img src={img.previewUrl} alt={`Upload ${idx + 1}`} />
-                <button 
-                  type="button" 
-                  className="remove-btn" 
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleRemove(img.previewUrl);
-                  }}
-                  aria-label="Remove image"
-                >
-                  <X size={16} />
+            {img.progress > 0 && img.progress < 100 && (
+              <div className="upload-overlay"><span className="spinner" /></div>
+            )}
+
+            {img.error && (
+              <div className="upload-overlay upload-overlay--error">
+                <AlertCircle size={18} />
+                <button type="button" className="btn btn-sm btn-outline" onClick={() => upload(img)}>
+                  <RotateCw size={14} /> আবার চেষ্টা
                 </button>
               </div>
-              
-              {img.progress < 100 && (
-                <div className="upload-progress-container">
-                  <div className="upload-progress-bar" style={{ width: `${img.progress}%` }}></div>
-                </div>
+            )}
+
+            <div className="image-actions">
+              {idx > 0 && img.progress === 100 && (
+                <button type="button" onClick={() => makeCover(img)} aria-label="কভার বানান" title="কভার বানান">
+                  <Star size={14} />
+                </button>
               )}
-              
-              {img.error && (
-                <div className="upload-error">
-                  <AlertCircle size={14} />
-                  <span>{img.error}</span>
-                </div>
-              )}
+              <button type="button" onClick={() => handleRemove(img)} aria-label="ছবি সরান" title="সরান">
+                <X size={14} />
+              </button>
             </div>
-          ))}
-        </div>
-      )}
+          </div>
+        ))}
+
+        {images.length < maxFiles && (
+          <div
+            className={`upload-dropzone ${isDragging ? 'dragging' : ''}`}
+            onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+            onDragLeave={() => setIsDragging(false)}
+            onDrop={handleDrop}
+            onClick={() => fileInputRef.current?.click()}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && fileInputRef.current?.click()}
+          >
+            <ImagePlus size={28} />
+            <span className="upload-text">ছবি যোগ করুন</span>
+            <span className="upload-subtext">{formatNumber(images.length)}/{formatNumber(maxFiles)}</span>
+            <input
+              type="file"
+              ref={fileInputRef}
+              onChange={handleFileInput}
+              accept={ACCEPTED.join(',')}
+              multiple
+              hidden
+            />
+          </div>
+        )}
+      </div>
     </div>
   );
 };

@@ -2,6 +2,7 @@ import mongoose, { Schema, Document, Model } from 'mongoose';
 
 export interface IVerificationLog extends Document {
   userId: mongoose.Types.ObjectId;
+  verificationType: 'adult' | 'minor';
   nidHash: string;
   dob: Date;
   selfieUrl: string;
@@ -20,6 +21,11 @@ const verificationLogSchema = new Schema<IVerificationLog>(
       type: Schema.Types.ObjectId,
       ref: 'User',
       required: true,
+    },
+    verificationType: {
+      type: String,
+      enum: ['adult', 'minor'],
+      default: 'adult',
     },
     nidHash: {
       type: String,
@@ -41,7 +47,6 @@ const verificationLogSchema = new Schema<IVerificationLog>(
     attemptsToday: {
       type: Number,
       default: 1,
-      max: 3,
     },
     lastAttemptDate: {
       type: Date,

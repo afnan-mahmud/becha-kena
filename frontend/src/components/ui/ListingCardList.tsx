@@ -1,66 +1,42 @@
-import type { IListing } from '../../types';
 import { Link } from 'react-router-dom';
+import { MapPin, Clock, BadgeCheck } from 'lucide-react';
+import type { IListing } from '../../types';
 import { formatPrice, formatRelativeTime } from '../../utils/formatters';
-import { MapPin, Clock } from 'lucide-react';
+import { getCategoryLabel, getConditionLabel } from '../../utils/constants';
+import { formatLocation, getCoverImage, getSeller } from '../../utils/listing';
 import './ListingCardList.css';
 
-interface ListingCardListProps {
-  listing: IListing;
-}
-
-export const ListingCardList = ({ listing }: ListingCardListProps) => {
-  const primaryImage = listing.images && listing.images.length > 0 
-    ? listing.images[0] 
-    : 'https://via.placeholder.com/300x200?text=No+Image';
-
-  const formatCondition = (condition: string) => {
-    switch (condition) {
-      case 'New': return 'নতুন';
-      case 'Like New': return 'প্রায় নতুন';
-      case 'Used': return 'ব্যবহৃত';
-      default: return condition;
-    }
-  };
+export const ListingCardList = ({ listing }: { listing: IListing }) => {
+  const seller = getSeller(listing);
+  const condition = getConditionLabel(listing.condition);
 
   return (
-    <Link to={`/listings/${listing.id}`} className="listing-card-list">
-      <div className="listing-card-list-image">
-        <img src={primaryImage} alt={listing.title} />
-        <div className="listing-badge condition-badge">{formatCondition(listing.condition)}</div>
+    <Link to={`/listings/${listing.id}`} className="listing-row">
+      <div className="listing-row__media">
+        <img src={getCoverImage(listing)} alt="" loading="lazy" />
       </div>
-      
-      <div className="listing-card-list-content">
-        <h3 className="listing-card-list-title" title={listing.title}>
-          {listing.title}
-        </h3>
-        
-        <p className="listing-card-list-description">
-          {listing.description}
-        </p>
 
-        <div className="listing-card-list-price">
-          {formatPrice(listing.price)}
+      <div className="listing-row__body">
+        <div className="listing-row__tags">
+          {condition && <span className="badge badge-green">{condition}</span>}
+          <span className="badge">{getCategoryLabel(listing.category)}</span>
         </div>
+        <h3 className="listing-row__title line-clamp-2">{listing.title}</h3>
+        <p className="listing-row__desc line-clamp-2">{listing.description}</p>
 
-        <div className="listing-card-list-footer">
-          <div className="listing-card-list-info">
-            <span className="info-item">
-              <MapPin size={14} />
-              {listing.location.thana}, {listing.location.district}
+        <div className="listing-row__foot">
+          <span><MapPin size={14} /> {formatLocation(listing, 3)}</span>
+          <span><Clock size={14} /> {formatRelativeTime(listing.createdAt)}</span>
+          {seller && (
+            <span className="listing-row__seller">
+              {seller.displayName}
+              {seller.isVerified && <BadgeCheck size={14} />}
             </span>
-            <span className="info-item">
-              <Clock size={14} />
-              {formatRelativeTime(listing.createdAt)}
-            </span>
-          </div>
-          {listing.seller && (
-            <div className="listing-card-list-seller">
-              <span>{listing.seller.displayName}</span>
-              {listing.seller.isVerified && <span className="verified-icon">✓</span>}
-            </div>
           )}
         </div>
       </div>
+
+      <div className="listing-row__price">{formatPrice(listing.price)}</div>
     </Link>
   );
 };

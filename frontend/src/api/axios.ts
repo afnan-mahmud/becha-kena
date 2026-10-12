@@ -9,26 +9,33 @@ const api = axios.create({
   },
 });
 
+// Auth endpoints answer 401 for a wrong OTP etc. — never try to refresh on those
+const isAuthEndpoint = (url?: string) => !!url && url.startsWith('/auth/');
+
+let refreshPromise: Promise<unknown> | null = null;
+
 api.interceptors.response.use(
   (response) => response,
   async (error: AxiosError) => {
-    const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
+    const originalRequest = error.config as (InternalAxiosRequestConfig & { _retry?: boolean }) | undefined;
 
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    if (error.response?.status === 401 && originalRequest && !originalRequest._retry && !isAuthEndpoint(originalRequest.url)) {
       originalRequest._retry = true;
       try {
-        await axios.post(
-          `${api.defaults.baseURL}/auth/refresh`,
-          {},
-          { withCredentials: true }
-        );
+        // Share one refresh call between parallel failing requests
+        refreshPromise ??= axios.post(`${api.defaults.baseURL}/auth/refresh`, {}, { withCredentials: true });
+        await refreshPromise;
         return api(originalRequest);
-      } catch (refreshError) {
-        // Handle failed refresh, but don't force redirect if it's just checking the initial session
-        if (originalRequest.url !== '/users/me' && window.location.pathname !== '/login') {
-          window.location.href = '/login';
+      } catch {
+        const protectedPath = !['/', '/login', '/listings'].includes(window.location.pathname)
+          && !window.location.pathname.startsWith('/listings/')
+          && !window.location.pathname.startsWith('/user/');
+        if (originalRequest.url !== '/users/me' && protectedPath) {
+          window.location.href = `/login?redirect=${encodeURIComponent(window.location.pathname)}`;
         }
-        return Promise.reject(refreshError);
+        return Promise.reject(new Error('আপনার সেশনের মেয়াদ শেষ। আবার লগইন করুন।'));
+      } finally {
+        refreshPromise = null;
       }
     }
 
@@ -45,8 +52,17 @@ api.interceptors.response.use(
       }
     }
 
-    const errorMessage = (error.response?.data as any)?.error || error.message;
-    return Promise.reject(new Error(errorMessage));
+    if (!error.response) {
+      return Promise.reject(new Error('ইন্টারনেট সংযোগ পরীক্ষা করুন।'));
+    }
+
+    const data = error.response.data as { error?: string; details?: string[] } | undefined;
+    const details = data?.details?.length ? ` (${data.details.join(', ')})` : '';
+    const errorMessage = data?.error ? `${data.error}${details}` : error.message;
+    const wrapped = new Error(errorMessage) as Error & { code?: string; status?: number };
+    wrapped.code = (error.response.data as { code?: string })?.code;
+    wrapped.status = error.response.status;
+    return Promise.reject(wrapped);
   }
 );
 

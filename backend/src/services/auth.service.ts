@@ -32,9 +32,22 @@ export const verifyOTP = async (phoneNumber: string, otpCode: string) => {
     throw new AppError('Invalid or expired OTP', 401, 'INVALID_OTP');
   }
 
+  // MongoDB's TTL sweep runs about once a minute, so check expiry explicitly
+  if (otpRecord.expiresAt.getTime() < Date.now()) {
+    await TemporaryOtp.deleteOne({ _id: otpRecord._id });
+    throw new AppError('OTP has expired. Please request a new one.', 401, 'OTP_EXPIRED');
+  }
+
+  // Brute-force protection: an OTP is burned after 5 wrong guesses
+  if (otpRecord.attempts >= 5) {
+    await TemporaryOtp.deleteOne({ _id: otpRecord._id });
+    throw new AppError('Too many wrong attempts. Please request a new OTP.', 429, 'OTP_ATTEMPTS_EXCEEDED');
+  }
+
   const isMatch = await compareOTP(otpCode, otpRecord.otpCode);
 
   if (!isMatch) {
+    await TemporaryOtp.updateOne({ _id: otpRecord._id }, { $inc: { attempts: 1 } });
     throw new AppError('Invalid or expired OTP', 401, 'INVALID_OTP');
   }
 
@@ -54,6 +67,12 @@ export const verifyOTP = async (phoneNumber: string, otpCode: string) => {
     throw new AppError('Account suspended', 403, 'ACCOUNT_SUSPENDED');
   }
 
+  // Logging in reactivates an inactive account and cancels a pending deletion request
+  if (user.status === 'inactive') {
+    user.status = 'active';
+    user.deletionRequestedAt = null;
+  }
+
   // Update lastLoginDate
   user.lastLoginDate = new Date();
   await user.save();
@@ -71,13 +90,15 @@ export const verifyOTP = async (phoneNumber: string, otpCode: string) => {
     tokenVersion: user.tokenVersion,
   });
 
-  // Delete the used OTP record
-  await TemporaryOtp.deleteOne({ _id: otpRecord._id });
+  // Delete all OTP records for this phone once one is used
+  await TemporaryOtp.deleteMany({ phoneNumber: normalizedPhone });
+
+  const { tokenVersion: _tokenVersion, fcmTokens: _fcmTokens, ...safeUser } = user.toJSON() as any;
 
   return {
     accessToken,
     refreshToken,
-    user,
+    user: safeUser,
   };
 };
 

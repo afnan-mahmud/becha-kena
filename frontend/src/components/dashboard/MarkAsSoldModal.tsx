@@ -1,12 +1,15 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
+import { Store } from 'lucide-react';
 import { getRooms } from '../../services/chat.service';
 import { markAsSold } from '../../services/listing.service';
+import { useAuthStore } from '../../store/authStore';
 import { UserAvatar } from '../ui/UserAvatar';
 import { LoadingSpinner } from '../common/LoadingSpinner';
+import { getErrorMessage } from '../../utils/formatters';
 import './MarkAsSoldModal.css';
-import '../common/ConfirmModal.css'; // Reuse modal overlay styles
+import '../common/ConfirmModal.css';
 
 interface MarkAsSoldModalProps {
   isOpen: boolean;
@@ -15,43 +18,34 @@ interface MarkAsSoldModalProps {
   listingId: string;
 }
 
+const EXTERNAL = 'external';
+
 export const MarkAsSoldModal = ({ isOpen, onClose, onSuccess, listingId }: MarkAsSoldModalProps) => {
-  const [selectedBuyerId, setSelectedBuyerId] = useState<string | null>(null);
+  const { user } = useAuthStore();
+  const [selected, setSelected] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Close on Escape
   useEffect(() => {
-    const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-    };
+    const handleEscape = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
     if (isOpen) window.addEventListener('keydown', handleEscape);
     return () => window.removeEventListener('keydown', handleEscape);
   }, [isOpen, onClose]);
 
-  // Fetch all rooms and filter by listingId locally
-  // In a real app, there would be an API `getRoomsByListing(listingId)`
-  const { data: roomsData, isLoading } = useQuery({
-    queryKey: ['chat-rooms'],
-    queryFn: getRooms,
-    enabled: isOpen
-  });
+  const { data, isLoading } = useQuery({ queryKey: ['chat-rooms'], queryFn: getRooms, enabled: isOpen });
 
-  const relatedRooms = roomsData?.data?.filter(room => room.listingId === listingId) || [];
+  // Buyers = people who chatted with me about this listing
+  const buyerRooms = (data?.data || []).filter((room) => room.listingId === listingId && room.sellerId === user?.id);
 
   const handleConfirm = async () => {
-    if (!selectedBuyerId) {
-      toast.error('অনুগ্রহ করে একজন ক্রেতা নির্বাচন করুন');
-      return;
-    }
-
+    if (!selected) return;
+    setIsSubmitting(true);
     try {
-      setIsSubmitting(true);
-      await markAsSold(listingId, selectedBuyerId);
-      toast.success('বিজ্ঞাপনটি বিক্রিত হিসেবে চিহ্নিত করা হয়েছে');
+      await markAsSold(listingId, selected === EXTERNAL ? undefined : selected);
+      toast.success(selected === EXTERNAL ? 'বিক্রিত হিসেবে চিহ্নিত হয়েছে' : 'বিক্রিত! ক্রেতা এখন আপনাকে রিভিউ দিতে পারবেন।');
       onSuccess();
       onClose();
     } catch (error) {
-      toast.error('সমস্যা হয়েছে। আবার চেষ্টা করুন।');
+      toast.error(getErrorMessage(error));
     } finally {
       setIsSubmitting(false);
     }
@@ -61,70 +55,48 @@ export const MarkAsSoldModal = ({ isOpen, onClose, onSuccess, listingId }: MarkA
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="mark-sold-modal-content" onClick={e => e.stopPropagation()}>
-        <h3 className="modal-title">কাকে বিক্রি করেছেন?</h3>
-        <p className="modal-message" style={{ marginBottom: 0 }}>
-          যাদের সাথে আপনার এই বিজ্ঞাপনটি নিয়ে চ্যাট হয়েছে তাদের তালিকা নিচে দেওয়া হলো। সঠিক ক্রেতা নির্বাচন করুন।
-        </p>
+      <div className="mark-sold-modal-content" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true">
+        <h3 className="modal-title">কার কাছে বিক্রি করেছেন?</h3>
+        <p className="modal-message">সঠিক ক্রেতা বেছে নিন — তিনি আপনাকে রিভিউ দিতে পারবেন, যা আপনার বিশ্বাসযোগ্যতা বাড়াবে।</p>
 
         {isLoading ? (
-          <div style={{ height: '200px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <LoadingSpinner />
-          </div>
-        ) : relatedRooms.length === 0 ? (
-          <div className="mark-sold-empty">
-            <p>আপনার কোনো চ্যাট হিস্ট্রি পাওয়া যায়নি।</p>
-            <p>অন্য কোনো মাধ্যমে বিক্রি করে থাকলে নিচের অপশনটি নির্বাচন করুন।</p>
-            {/* Fallback option if no chat history */}
-            <div 
-              className={`buyer-list-item ${selectedBuyerId === 'external' ? 'selected' : ''}`}
-              onClick={() => setSelectedBuyerId('external')}
-              style={{ marginTop: '1rem', textAlign: 'left' }}
-            >
-              <div className="buyer-info">
-                <div className="buyer-name">অন্যান্য মাধ্যম</div>
-                <div className="buyer-meta">বেচা-কেনা এর বাইরে বিক্রি হয়েছে</div>
-              </div>
-            </div>
-          </div>
+          <div style={{ padding: 40 }}><LoadingSpinner /></div>
         ) : (
           <div className="buyer-list">
-            {relatedRooms.map(room => (
-              <div 
-                key={room.buyerId}
-                className={`buyer-list-item ${selectedBuyerId === room.buyerId ? 'selected' : ''}`}
-                onClick={() => setSelectedBuyerId(room.buyerId)}
+            {buyerRooms.map((room) => (
+              <button
+                type="button"
+                key={room.id}
+                className={`buyer-list-item ${selected === room.buyerId ? 'selected' : ''}`}
+                onClick={() => setSelected(room.buyerId)}
               >
-                <UserAvatar name={room.buyer?.displayName || 'অজ্ঞাত'} size="sm" />
+                <UserAvatar name={room.buyer?.displayName || 'ক'} size="sm" />
                 <div className="buyer-info">
-                  <div className="buyer-name">{room.buyer?.displayName || 'অজ্ঞাত ক্রেতা'}</div>
-                  <div className="buyer-meta">শেষ মেসেজ: {room.lastMessage || '...'}</div>
+                  <div className="buyer-name">{room.buyer?.displayName || 'ক্রেতা'}</div>
+                  <div className="buyer-meta truncate">{room.lastMessage?.messageText || 'কোনো মেসেজ নেই'}</div>
                 </div>
-              </div>
+              </button>
             ))}
-            
-            <div 
-              className={`buyer-list-item ${selectedBuyerId === 'external' ? 'selected' : ''}`}
-              onClick={() => setSelectedBuyerId('external')}
+            {buyerRooms.length === 0 && <p className="text-sm text-muted">এই বিজ্ঞাপন নিয়ে কারো সাথে চ্যাট হয়নি।</p>}
+
+            <button
+              type="button"
+              className={`buyer-list-item ${selected === EXTERNAL ? 'selected' : ''}`}
+              onClick={() => setSelected(EXTERNAL)}
             >
+              <span className="buyer-external-icon"><Store size={18} /></span>
               <div className="buyer-info">
-                <div className="buyer-name">অন্যান্য মাধ্যম</div>
-                <div className="buyer-meta">বেচা-কেনা এর বাইরে বিক্রি হয়েছে</div>
+                <div className="buyer-name">বেচা-কেনার বাইরে বিক্রি করেছি</div>
+                <div className="buyer-meta">এক্ষেত্রে কেউ রিভিউ দিতে পারবে না</div>
               </div>
-            </div>
+            </button>
           </div>
         )}
 
-        <div className="modal-actions" style={{ marginTop: 'auto' }}>
-          <button className="btn btn-outline" onClick={onClose} disabled={isSubmitting}>
-            বাতিল করুন
-          </button>
-          <button 
-            className="btn btn-primary" 
-            onClick={handleConfirm}
-            disabled={!selectedBuyerId || isSubmitting}
-          >
-            {isSubmitting ? 'প্রসেসিং...' : 'নিশ্চিত করুন'}
+        <div className="modal-actions">
+          <button type="button" className="btn btn-outline" onClick={onClose} disabled={isSubmitting}>বাতিল</button>
+          <button type="button" className="btn btn-primary" onClick={handleConfirm} disabled={!selected || isSubmitting}>
+            {isSubmitting ? 'সেভ হচ্ছে…' : 'নিশ্চিত করুন'}
           </button>
         </div>
       </div>

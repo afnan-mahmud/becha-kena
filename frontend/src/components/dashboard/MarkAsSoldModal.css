@@ -1,7 +1,7 @@
 .mark-sold-modal-content {
   background-color: var(--card-bg);
-  border-radius: var(--border-radius-lg);
-  padding: 2rem;
+  border-radius: var(--radius-2xl);
+  padding: 1.75rem;
   width: 90%;
   max-width: 500px;
   max-height: 80vh;
@@ -30,6 +30,10 @@
   border-radius: var(--border-radius-md);
   cursor: pointer;
   transition: all 0.2s ease;
+  width: 100%;
+  background: #fff;
+  font-family: inherit;
+  text-align: left;
 }
 
 .buyer-list-item:hover {
@@ -38,7 +42,7 @@
 
 .buyer-list-item.selected {
   border-color: var(--primary-color);
-  background-color: rgba(16, 185, 129, 0.05); /* Assuming primary is green */
+  background-color: var(--color-primary-soft);
 }
 
 .buyer-info {
@@ -63,4 +67,17 @@
   background-color: var(--bg-secondary);
   border-radius: var(--border-radius-md);
   margin: 1rem 0;
+}
+
+.buyer-info { min-width: 0; }
+
+.buyer-external-icon {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--color-secondary-soft);
+  color: #A87700;
+  flex-shrink: 0;
 }

@@ -1,7 +1,8 @@
-import { Edit, CheckCircle, RefreshCw, Trash2, Calendar, Eye, Image as ImageIcon } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Pencil, CheckCircle2, RefreshCw, Trash2, CalendarDays, Hourglass, Eye } from 'lucide-react';
 import type { IListing } from '../../types';
-import { StatusBadge } from '../common/StatusBadge';
-import { formatPrice, formatDate } from '../../utils/formatters';
+import { formatDate, formatPrice } from '../../utils/formatters';
+import { getCoverImage, isRejected } from '../../utils/listing';
 import './MyListingItem.css';
 
 interface MyListingItemProps {
@@ -12,95 +13,77 @@ interface MyListingItemProps {
   onDelete: (id: string) => void;
 }
 
+const STATUS = {
+  active: { label: 'সক্রিয়', cls: 'badge-green' },
+  pending: { label: 'রিভিউতে আছে', cls: 'badge-yellow' },
+  sold: { label: 'বিক্রিত', cls: 'badge-blue' },
+  archived: { label: 'আর্কাইভড', cls: '' },
+  rejected: { label: 'বাতিল', cls: 'badge-red' },
+} as const;
+
 export const MyListingItem = ({ listing, onEdit, onSold, onRenew, onDelete }: MyListingItemProps) => {
-  const getStatusVariant = (status: string) => {
-    switch (status) {
-      case 'active': return 'success';
-      case 'pending':
-      case 'under_review': return 'warning';
-      case 'sold': return 'info';
-      case 'expired':
-      case 'archived': return 'neutral';
-      case 'rejected': return 'danger';
-      default: return 'neutral';
-    }
-  };
-
-  const getStatusLabel = (status: string) => {
-    switch (status) {
-      case 'active': return 'সক্রিয়';
-      case 'under_review': return 'অপেক্ষমান';
-      case 'sold': return 'বিক্রিত';
-      case 'expired': return 'মেয়াদোত্তীর্ণ/আর্কাইভড';
-      case 'rejected': return 'বাতিল';
-      default: return status;
-    }
-  };
-
-  const isActiveOrPending = listing.status === 'active' || listing.status === 'under_review';
-  const isArchivedOrExpired = listing.status === 'expired';
+  const rejected = isRejected(listing);
+  const status = rejected ? STATUS.rejected : STATUS[listing.status];
+  const daysLeft = Math.ceil((new Date(listing.expiresAt).getTime() - Date.now()) / 86_400_000);
+  const canEdit = listing.status === 'active' || listing.status === 'pending';
 
   return (
-    <div className="my-listing-item">
-      <div className="my-listing-thumbnail">
-        {listing.images && listing.images.length > 0 ? (
-          <img src={listing.images[0]} alt={listing.title} />
-        ) : (
-          <div className="my-listing-thumbnail-placeholder">
-            <ImageIcon size={32} />
-          </div>
+    <article className="my-item">
+      <Link to={`/listings/${listing.id}`} className="my-item__thumb">
+        <img src={getCoverImage(listing)} alt="" loading="lazy" />
+      </Link>
+
+      <div className="my-item__body">
+        <div className="my-item__top">
+          <span className={`badge ${status.cls}`}>{status.label}</span>
+          {listing.status === 'active' && daysLeft <= 5 && daysLeft > 0 && (
+            <span className="badge badge-red"><Hourglass size={12} /> {daysLeft} দিন বাকি</span>
+          )}
+        </div>
+        <Link to={`/listings/${listing.id}`} className="my-item__title line-clamp-2">{listing.title}</Link>
+        <div className="my-item__price">{formatPrice(listing.price)}</div>
+        <div className="my-item__meta">
+          <span><CalendarDays size={14} /> পোস্ট: {formatDate(listing.createdAt)}</span>
+          {listing.status === 'active' && <span>মেয়াদ: {formatDate(listing.expiresAt)}</span>}
+        </div>
+        {rejected && listing.moderationFlags?.flagReason && (
+          <p className="my-item__reason">বাতিলের কারণ: {listing.moderationFlags.flagReason}</p>
+        )}
+        {listing.status === 'pending' && (
+          <p className="my-item__hint">আমাদের টিম বিজ্ঞাপনটি রিভিউ করছে। অনুমোদনের পর সবাই দেখতে পাবে।</p>
         )}
       </div>
 
-      <div className="my-listing-content">
-        <div className="my-listing-header">
-          <h3 className="my-listing-title">{listing.title}</h3>
-          <div className="my-listing-price">{formatPrice(listing.price)}</div>
-        </div>
-
-        <div className="my-listing-meta">
-          <StatusBadge status={getStatusLabel(listing.status)} variant={getStatusVariant(listing.status)} />
-          
-          <div className="my-listing-meta-item">
-            <Calendar size={14} />
-            <span>পোস্ট: {formatDate(listing.createdAt)}</span>
-          </div>
-          
-          <div className="my-listing-meta-item">
-            <Calendar size={14} />
-            <span>মেয়াদ: {formatDate(listing.expiresAt)}</span>
-          </div>
-          
-          <div className="my-listing-meta-item">
-            <Eye size={14} />
-            <span>১২৩ ভিউ</span> {/* Mock view count as it's not in schema yet */}
-          </div>
-        </div>
-
-        <div className="my-listing-actions">
-          {isActiveOrPending && (
-            <button className="btn btn-outline btn-sm flex-center gap-1" onClick={() => onEdit(listing.id)}>
-              <Edit size={14} /> সম্পাদনা
-            </button>
-          )}
-          
-          {listing.status === 'active' && (
-            <button className="btn btn-primary btn-sm flex-center gap-1" onClick={() => onSold(listing.id)}>
-              <CheckCircle size={14} /> বিক্রি হয়েছে
-            </button>
-          )}
-
-          {isArchivedOrExpired && (
-            <button className="btn btn-outline btn-sm flex-center gap-1" onClick={() => onRenew(listing.id)}>
-              <RefreshCw size={14} /> নবায়ন
-            </button>
-          )}
-
-          <button className="btn btn-danger btn-sm flex-center gap-1" onClick={() => onDelete(listing.id)}>
-            <Trash2 size={14} /> মুছুন
+      <div className="my-item__actions">
+        {listing.status === 'active' && (
+          <button type="button" className="btn btn-primary btn-sm" onClick={() => onSold(listing.id)}>
+            <CheckCircle2 size={15} /> বিক্রি হয়েছে
           </button>
-        </div>
+        )}
+        {canEdit && (
+          <button type="button" className="btn btn-outline btn-sm" onClick={() => onEdit(listing.id)}>
+            <Pencil size={15} /> এডিট
+          </button>
+        )}
+        {listing.status === 'archived' && !rejected && (
+          <button type="button" className="btn btn-outline btn-sm" onClick={() => onRenew(listing.id)}>
+            <RefreshCw size={15} /> নবায়ন
+          </button>
+        )}
+        {listing.status === 'active' && daysLeft <= 5 && (
+          <button type="button" className="btn btn-outline btn-sm" onClick={() => onRenew(listing.id)}>
+            <RefreshCw size={15} /> মেয়াদ বাড়ান
+          </button>
+        )}
+        {listing.status !== 'archived' && listing.status !== 'sold' && (
+          <button type="button" className="btn btn-danger-outline btn-sm" onClick={() => onDelete(listing.id)}>
+            <Trash2 size={15} /> সরান
+          </button>
+        )}
+        {listing.status === 'sold' && (
+          <Link to={`/listings/${listing.id}`} className="btn btn-ghost btn-sm"><Eye size={15} /> দেখুন</Link>
+        )}
       </div>
-    </div>
+    </article>
   );
 };

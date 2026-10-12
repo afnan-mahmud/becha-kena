@@ -1,86 +1,64 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Shield, Users, ArrowLeft, ShieldCheck } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { ShieldCheck, Users, ArrowLeft, Lock, Clock, BadgeCheck, IdCard } from 'lucide-react';
 import toast from 'react-hot-toast';
-
 import { useAuthStore } from '../../store/authStore';
-import { submitAdultVerification, submitMinorVerification } from '../../services/kyc.service';
-import { getPresignedUrl, uploadFileToS3 } from '../../services/media.service';
+import { getVerificationStatus, submitAdultVerification, submitMinorVerification } from '../../services/kyc.service';
+import { uploadImage } from '../../services/media.service';
 import { CameraCapture } from '../../components/common/CameraCapture';
-
+import { SEOHead } from '../../components/common/SEOHead';
+import { getErrorMessage } from '../../utils/formatters';
 import './VerificationPage.css';
 
 type KycType = 'adult' | 'minor' | null;
+
+const NID_PATTERN = /^(\d{10}|\d{13}|\d{17})$/;
 
 export const VerificationPage = () => {
   const { user } = useAuthStore();
   const navigate = useNavigate();
   const [kycType, setKycType] = useState<KycType>(null);
-
-  // Form State
   const [nidNumber, setNidNumber] = useState('');
   const [dob, setDob] = useState('');
-  const [parentNid, setParentNid] = useState('');
-  const [parentDob, setParentDob] = useState('');
   const [selfieFile, setSelfieFile] = useState<File | null>(null);
   const [consentGiven, setConsentGiven] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const { data: statusData } = useQuery({ queryKey: ['kyc-status'], queryFn: getVerificationStatus });
+  const pending = statusData?.data?.status?.verificationStatus === 'pending_review';
 
   useEffect(() => {
     if (user?.isVerified) {
       toast('আপনার অ্যাকাউন্ট ইতিমধ্যে যাচাই করা হয়েছে', { icon: '✅' });
       navigate('/profile', { replace: true });
+    } else if (pending) {
+      navigate('/verify/status', { replace: true });
     }
-  }, [user, navigate]);
+  }, [user, pending, navigate]);
 
-  const uploadSelfie = async (): Promise<string> => {
-    if (!selfieFile) throw new Error("Selfie is missing");
-    
-    // Get presigned URL
-    const userId = user?.id || (user as any)?._id || 'unknown';
-    const { data } = await getPresignedUrl('selfie.webp', selfieFile.type, `kyc/${userId}`);
-    
-    // Upload to S3
-    await uploadFileToS3(data.uploadUrl, selfieFile);
-    
-    return data.fileUrl;
-  };
+  const today = new Date().toISOString().split('T')[0];
+  const nidValid = NID_PATTERN.test(nidNumber);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    if (!selfieFile) {
-      toast.error('অনুগ্রহ করে সেলফি যুক্ত করুন');
-      return;
-    }
-    if (kycType === 'minor' && !consentGiven) {
-      toast.error('অভিভাবকের সম্মতি প্রয়োজন');
-      return;
-    }
+    if (!nidValid) return toast.error('NID নম্বর ১০, ১৩ বা ১৭ ডিজিটের হতে হবে');
+    if (!dob) return toast.error('জন্ম তারিখ দিন');
+    if (!selfieFile) return toast.error('একটি সেলফি তুলুন');
+    if (kycType === 'minor' && !consentGiven) return toast.error('অভিভাবকের সম্মতি প্রয়োজন');
 
     setIsSubmitting(true);
     try {
-      const selfieUrl = await uploadSelfie();
-
+      const selfieUrl = await uploadImage(selfieFile, 'kyc');
       if (kycType === 'adult') {
-        await submitAdultVerification({
-          nidNumber,
-          dob,
-          selfieUrl
-        });
+        await submitAdultVerification({ nidNumber, dob, selfieUrl });
       } else {
-        await submitMinorVerification({
-          parentNidNumber: parentNid,
-          dob,
-          parentSelfieUrl: selfieUrl,
-          consentConfirmed: consentGiven
-        });
+        await submitMinorVerification({ parentNidNumber: nidNumber, dob, parentSelfieUrl: selfieUrl, consentConfirmed: consentGiven });
       }
-
-      toast.success('আপনার আবেদন জমা দেওয়া হয়েছে!');
+      toast.success('আবেদন জমা হয়েছে! ১২ ঘণ্টার মধ্যে ফলাফল জানানো হবে।');
       navigate('/verify/status');
-    } catch (error: any) {
-      const msg = error.response?.data?.message || 'ভেরিফিকেশন জমা দিতে সমস্যা হয়েছে।';
-      toast.error(msg);
+    } catch (error) {
+      toast.error(getErrorMessage(error, 'ভেরিফিকেশন জমা দিতে সমস্যা হয়েছে।'));
     } finally {
       setIsSubmitting(false);
     }
@@ -88,150 +66,104 @@ export const VerificationPage = () => {
 
   if (kycType === null) {
     return (
-      <div className="kyc-page-container">
-        <div className="kyc-header">
-          <h1>পরিচয় যাচাই করুন</h1>
-          <p>বিজ্ঞাপন দিতে ও চ্যাট করতে আপনার জাতীয় পরিচয়পত্র (NID) দিয়ে যাচাই সম্পন্ন করুন।</p>
-        </div>
-
-        <div className="kyc-choice-grid">
-          <div className="kyc-choice-card" onClick={() => setKycType('adult')}>
-            <div className="kyc-choice-icon">
-              <Shield size={32} />
-            </div>
-            <h3>প্রাপ্তবয়স্ক (১৮+)</h3>
-            <p className="text-secondary text-sm">নিজের NID কার্ড ব্যবহার করুন</p>
-          </div>
-
-          <div className="kyc-choice-card" onClick={() => setKycType('minor')}>
-            <div className="kyc-choice-icon">
-              <Users size={32} />
-            </div>
-            <h3>অপ্রাপ্তবয়স্ক (১৮ এর নিচে)</h3>
-            <p className="text-secondary text-sm">অভিভাবকের NID কার্ড ব্যবহার করুন</p>
+      <div className="kyc container">
+        <SEOHead title="NID ভেরিফিকেশন — বেচা-কেনা" />
+        <div className="kyc__hero">
+          <span className="kyc__shield"><ShieldCheck size={36} /></span>
+          <h1>আপনার পরিচয় যাচাই করুন</h1>
+          <p>বিজ্ঞাপন দিতে, চ্যাট করতে ও বিক্রেতার ফোন নম্বর দেখতে একবার NID দিয়ে যাচাই করতে হবে।</p>
+          <div className="kyc__perks">
+            <span><Lock size={16} /> তথ্য এনক্রিপ্টেড</span>
+            <span><Clock size={16} /> মাত্র ২ মিনিট</span>
+            <span><BadgeCheck size={16} /> একবার যাচাই, সবসময় ভেরিফাইড</span>
           </div>
         </div>
+
+        <div className="kyc__choices">
+          <button type="button" className="kyc-choice" onClick={() => setKycType('adult')}>
+            <span className="kyc-choice__icon"><IdCard size={30} /></span>
+            <h3>আমার বয়স ১৮+</h3>
+            <p>নিজের জাতীয় পরিচয়পত্র (NID) দিয়ে যাচাই করুন</p>
+          </button>
+          <button type="button" className="kyc-choice" onClick={() => setKycType('minor')}>
+            <span className="kyc-choice__icon kyc-choice__icon--yellow"><Users size={30} /></span>
+            <h3>আমার বয়স ১৮-এর কম</h3>
+            <p>বাবা/মা বা অভিভাবকের NID ও সম্মতি দিয়ে যাচাই করুন</p>
+          </button>
+        </div>
+
+        <p className="kyc__note">
+          <Lock size={14} /> আপনার NID নম্বর আমরা সরাসরি সংরক্ষণ করি না — শুধু একটি এনক্রিপ্টেড হ্যাশ রাখা হয়।
+        </p>
       </div>
     );
   }
 
+  const isMinor = kycType === 'minor';
+
   return (
-    <div className="kyc-page-container">
-      <div className="kyc-form-container">
-        <div className="kyc-form-header">
-          <button type="button" onClick={() => setKycType(null)}>
+    <div className="kyc container">
+      <SEOHead title="NID ভেরিফিকেশন — বেচা-কেনা" />
+      <form className="kyc-form" onSubmit={handleSubmit}>
+        <div className="kyc-form__head">
+          <button type="button" className="icon-btn" onClick={() => setKycType(null)} aria-label="ফিরে যান">
             <ArrowLeft size={20} />
           </button>
-          <h2>{kycType === 'adult' ? 'প্রাপ্তবয়স্ক ভেরিফিকেশন' : 'অপ্রাপ্তবয়স্ক ভেরিফিকেশন'}</h2>
+          <h2>{isMinor ? 'অভিভাবকের মাধ্যমে যাচাই' : 'প্রাপ্তবয়স্ক যাচাই'}</h2>
         </div>
 
-        <form onSubmit={handleSubmit}>
-          {/* Step 1: NID Details */}
-          <div className="kyc-step">
-            <div className="kyc-step-title">
-              <span className="step-number">১</span> NID তথ্য
+        <section className="kyc-step">
+          <h3 className="kyc-step__title"><span>১</span> {isMinor ? 'অভিভাবকের NID ও আপনার জন্ম তারিখ' : 'NID তথ্য'}</h3>
+          <div className="kyc-grid">
+            <div className="form-group">
+              <label className="form-label" htmlFor="nid">{isMinor ? 'অভিভাবকের NID নম্বর' : 'NID নম্বর'} *</label>
+              <input
+                id="nid"
+                className="input"
+                inputMode="numeric"
+                value={nidNumber}
+                onChange={(e) => setNidNumber(e.target.value.replace(/\D/g, '').slice(0, 17))}
+                placeholder="১০, ১৩ বা ১৭ ডিজিট"
+                required
+              />
+              {nidNumber && !nidValid && <span className="error-text">NID ১০, ১৩ বা ১৭ ডিজিটের হয়</span>}
             </div>
-            <div className="kyc-grid-2">
-              <div className="form-group">
-                <label className="form-label">আপনার NID নম্বর *</label>
-                <input
-                  type="text"
-                  className="form-control"
-                  value={nidNumber}
-                  onChange={(e) => setNidNumber(e.target.value.replace(/\D/g, ''))}
-                  placeholder="১০ বা ১৭ ডিজিট"
-                  maxLength={17}
-                  required
-                />
-              </div>
-              <div className="form-group">
-                <label className="form-label">আপনার জন্ম তারিখ *</label>
-                <input
-                  type="date"
-                  className="form-control"
-                  value={dob}
-                  onChange={(e) => setDob(e.target.value)}
-                  required
-                />
-              </div>
+            <div className="form-group">
+              <label className="form-label" htmlFor="dob">আপনার জন্ম তারিখ *</label>
+              <input id="dob" type="date" className="input" value={dob} max={today} onChange={(e) => setDob(e.target.value)} required />
             </div>
+          </div>
+        </section>
 
-            {kycType === 'minor' && (
-              <div className="kyc-grid-2" style={{ marginTop: '1rem' }}>
-                <div className="form-group">
-                  <label className="form-label">অভিভাবকের NID নম্বর *</label>
-                  <input
-                    type="text"
-                    className="form-control"
-                    value={parentNid}
-                    onChange={(e) => setParentNid(e.target.value.replace(/\D/g, ''))}
-                    placeholder="১০ বা ১৭ ডিজিট"
-                    maxLength={17}
-                    required
-                  />
-                </div>
-                <div className="form-group">
-                  <label className="form-label">অভিভাবকের জন্ম তারিখ *</label>
-                  <input
-                    type="date"
-                    className="form-control"
-                    value={parentDob}
-                    onChange={(e) => setParentDob(e.target.value)}
-                    required
-                  />
-                </div>
-              </div>
-            )}
+        <section className="kyc-step">
+          <h3 className="kyc-step__title"><span>২</span> {isMinor ? 'অভিভাবকের লাইভ সেলফি' : 'আপনার লাইভ সেলফি'}</h3>
+          <p className="help-text">ভালো আলোতে, চশমা/মাস্ক ছাড়া, মুখ পরিষ্কার দেখা যায় এমন সেলফি তুলুন।</p>
+          <CameraCapture onCapture={setSelfieFile} />
+        </section>
+
+        <section className="kyc-step">
+          <h3 className="kyc-step__title"><span>৩</span> নিশ্চিত করুন</h3>
+          <div className="kyc-privacy">
+            <ShieldCheck size={20} />
+            <span>আপনার তথ্য শুধু পরিচয় যাচাইয়ের জন্য ব্যবহার হবে এবং কখনো অন্য কারো সাথে শেয়ার করা হবে না।</span>
           </div>
 
-          {/* Step 2: Selfie */}
-          <div className="kyc-step">
-            <div className="kyc-step-title">
-              <span className="step-number">২</span> 
-              {kycType === 'minor' ? 'অভিভাবকের সেলফি' : 'আপনার সেলফি'}
-            </div>
-            <p className="text-secondary text-sm mb-4">
-              চেহারা পরিষ্কারভাবে বোঝা যায় এমন একটি সেলফি তুলুন।
-            </p>
-            <CameraCapture onCapture={(file) => setSelfieFile(file)} />
-          </div>
+          {isMinor && (
+            <label className="kyc-consent">
+              <input type="checkbox" checked={consentGiven} onChange={(e) => setConsentGiven(e.target.checked)} />
+              <span>আমি নিশ্চিত করছি যে আমার অভিভাবক এই অ্যাকাউন্ট ব্যবহারে সম্মতি দিয়েছেন এবং প্রদত্ত NID তাঁর।</span>
+            </label>
+          )}
 
-          {/* Step 3: Review & Submit */}
-          <div className="kyc-step">
-            <div className="kyc-step-title">
-              <span className="step-number">৩</span> নিশ্চিত করুন
-            </div>
-            
-            <div className="privacy-disclaimer">
-              <ShieldCheck size={20} className="text-primary flex-shrink-0" />
-              <span>আপনার NID নম্বর এবং অন্যান্য তথ্য এনক্রিপ্ট করে সুরক্ষিতভাবে সংরক্ষণ করা হবে। এটি অন্য কোথাও প্রকাশ করা হবে না।</span>
-            </div>
-
-            {kycType === 'minor' && (
-              <div className="consent-checkbox">
-                <input
-                  type="checkbox"
-                  id="consent"
-                  checked={consentGiven}
-                  onChange={(e) => setConsentGiven(e.target.checked)}
-                  required
-                />
-                <label htmlFor="consent">
-                  আমি নিশ্চিত করছি যে আমার অভিভাবক এই যাচাইয়ের জন্য সম্মতি দিয়েছেন এবং এটি তার NID।
-                </label>
-              </div>
-            )}
-
-            <button 
-              type="submit" 
-              className="btn btn-primary w-full" 
-              disabled={isSubmitting || !selfieFile || (kycType === 'minor' && !consentGiven)}
-            >
-              {isSubmitting ? 'জমা দেওয়া হচ্ছে...' : 'যাচাইয়ের জন্য জমা দিন'}
-            </button>
-          </div>
-        </form>
-      </div>
+          <button
+            type="submit"
+            className="btn btn-primary btn-lg btn-block"
+            disabled={isSubmitting || !selfieFile || !nidValid || !dob || (isMinor && !consentGiven)}
+          >
+            {isSubmitting ? 'জমা দেওয়া হচ্ছে…' : 'যাচাইয়ের জন্য জমা দিন'}
+          </button>
+        </section>
+      </form>
     </div>
   );
 };

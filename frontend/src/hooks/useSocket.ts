@@ -1,49 +1,56 @@
-import { useEffect, useState, useRef } from 'react';
-import { io, Socket } from 'socket.io-client';
+import { useEffect, useState } from 'react';
+import { io, type Socket } from 'socket.io-client';
 import { useAuthStore } from '../store/authStore';
 
-const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000';
+const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || window.location.origin;
+
+// One shared connection for the whole app (header badge, chat list, conversation)
+let sharedSocket: Socket | null = null;
+let subscribers = 0;
+
+const getSocket = () => {
+  if (!sharedSocket) {
+    sharedSocket = io(`${SOCKET_URL}/chat`, {
+      withCredentials: true, // the httpOnly accessToken cookie authenticates the handshake
+      reconnection: true,
+      reconnectionDelay: 1000,
+      reconnectionDelayMax: 5000,
+    });
+  }
+  return sharedSocket;
+};
 
 export const useSocket = () => {
+  const { isAuthenticated, isVerified } = useAuthStore();
+  const [socket, setSocket] = useState<Socket | null>(null);
   const [isConnected, setIsConnected] = useState(false);
-  const socketRef = useRef<Socket | null>(null);
-  const { isAuthenticated } = useAuthStore();
 
   useEffect(() => {
-    // Only connect if the user is authenticated
-    if (!isAuthenticated) {
-      return;
-    }
+    // The /chat namespace only accepts verified users
+    if (!isAuthenticated || !isVerified) return;
 
-    if (!socketRef.current) {
-      socketRef.current = io(`${SOCKET_URL}/chat`, {
-        withCredentials: true,
-        reconnection: true,
-        reconnectionAttempts: Infinity,
-        reconnectionDelay: 1000,
-        reconnectionDelayMax: 5000,
-      });
+    const s = getSocket();
+    subscribers += 1;
+    setSocket(s);
+    setIsConnected(s.connected);
 
-      socketRef.current.on('connect', () => {
-        setIsConnected(true);
-      });
-
-      socketRef.current.on('disconnect', () => {
-        setIsConnected(false);
-      });
-    }
+    const onConnect = () => setIsConnected(true);
+    const onDisconnect = () => setIsConnected(false);
+    s.on('connect', onConnect);
+    s.on('disconnect', onDisconnect);
+    if (!s.connected) s.connect();
 
     return () => {
-      if (socketRef.current) {
-        socketRef.current.disconnect();
-        socketRef.current = null;
-        setIsConnected(false);
+      s.off('connect', onConnect);
+      s.off('disconnect', onDisconnect);
+      subscribers -= 1;
+      if (subscribers <= 0 && sharedSocket) {
+        sharedSocket.disconnect();
+        sharedSocket = null;
+        subscribers = 0;
       }
     };
-  }, [isAuthenticated]);
+  }, [isAuthenticated, isVerified]);
 
-  return {
-    socket: socketRef.current,
-    isConnected,
-  };
+  return { socket, isConnected };
 };

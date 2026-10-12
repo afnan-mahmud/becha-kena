@@ -7,6 +7,7 @@ import 'swiper/css/navigation';
 import 'swiper/css/thumbs';
 import 'swiper/css/free-mode';
 
+import { PLACEHOLDER_IMAGE } from '../../utils/constants';
 import './ImageGallery.css';
 
 interface ImageGalleryProps {
@@ -20,7 +21,7 @@ export const ImageGallery = ({ images, isSold = false }: ImageGalleryProps) => {
   if (!images || images.length === 0) {
     return (
       <div className="image-gallery-placeholder">
-        <img src="https://via.placeholder.com/800x600?text=No+Images" alt="No images" />
+        <img src={PLACEHOLDER_IMAGE} alt="কোনো ছবি নেই" />
         {isSold && <div className="sold-overlay">বিক্রি হয়ে গেছে</div>}
       </div>
     );
@@ -43,7 +44,7 @@ export const ImageGallery = ({ images, isSold = false }: ImageGalleryProps) => {
           {images.map((img, index) => (
             <SwiperSlide key={index}>
               <div className="image-zoom-container">
-                <img src={img} alt={`Gallery image ${index + 1}`} />
+                <img src={img} alt={`ছবি ${index + 1}`} loading={index === 0 ? 'eager' : 'lazy'} />
               </div>
             </SwiperSlide>
           ))}

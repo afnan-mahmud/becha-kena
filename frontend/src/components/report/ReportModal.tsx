@@ -1,51 +1,41 @@
-import { useState } from 'react';
+import { useState, type FormEvent } from 'react';
 import { X, Flag } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { submitReport } from '../../services/report.service';
-
+import { REPORT_REASONS } from '../../utils/constants';
+import { getErrorMessage } from '../../utils/formatters';
+import type { ReportReason } from '../../types';
 import './ReportModal.css';
 
 interface ReportModalProps {
   isOpen: boolean;
   onClose: () => void;
-  targetType: 'listing' | 'user';
+  targetType: 'Listing' | 'User';
   targetId: string;
 }
 
-const REPORT_REASONS = [
-  'প্রতারণা (Scam)',
-  'হয়রানি (Harassment)',
-  'ভুল তথ্য (Misrepresentation)',
-  'অনুপযুক্ত (Inappropriate)',
-  'অন্যান্য (Other)'
-];
-
 export const ReportModal = ({ isOpen, onClose, targetType, targetId }: ReportModalProps) => {
-  const [reason, setReason] = useState(REPORT_REASONS[0]);
+  const [reason, setReason] = useState<ReportReason>('scam');
   const [description, setDescription] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   if (!isOpen) return null;
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    if (!reason) {
-      toast.error('অনুগ্রহ করে একটি কারণ নির্বাচন করুন');
-      return;
-    }
     if (!description.trim()) {
-      toast.error('অনুগ্রহ করে বিস্তারিত বর্ণনা করুন');
+      toast.error('অনুগ্রহ করে সংক্ষেপে সমস্যাটি লিখুন');
       return;
     }
 
     setIsSubmitting(true);
     try {
-      await submitReport({ targetType, targetId, reason, description });
-      toast.success('রিপোর্ট সফলভাবে জমা দেওয়া হয়েছে!');
+      await submitReport({ targetType, targetId, reason, description: description.trim() });
+      toast.success('রিপোর্ট জমা হয়েছে। আমাদের টিম ২৪ ঘণ্টার মধ্যে দেখবে।');
+      setDescription('');
       onClose();
-    } catch (error: any) {
-      const msg = error.response?.data?.message || 'রিপোর্ট জমা দিতে সমস্যা হয়েছে';
-      toast.error(msg);
+    } catch (error) {
+      toast.error(getErrorMessage(error, 'রিপোর্ট জমা দিতে সমস্যা হয়েছে'));
     } finally {
       setIsSubmitting(false);
     }
@@ -53,73 +43,56 @@ export const ReportModal = ({ isOpen, onClose, targetType, targetId }: ReportMod
 
   return (
     <div className="report-modal-overlay" onClick={onClose}>
-      <div className="report-modal-container" onClick={e => e.stopPropagation()}>
+      <div className="report-modal-container" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true" aria-labelledby="report-title">
         <div className="report-modal-header">
-          <h2><Flag size={20} /> রিপোর্ট করুন</h2>
-          <button className="btn-close" onClick={onClose}>
-            <X size={24} />
+          <h2 id="report-title"><Flag size={20} /> রিপোর্ট করুন</h2>
+          <button className="btn-close" onClick={onClose} aria-label="বন্ধ করুন">
+            <X size={22} />
           </button>
         </div>
 
         <form onSubmit={handleSubmit}>
           <div className="report-modal-body">
             <p className="text-secondary mb-4">
-              {targetType === 'listing' ? 'এই বিজ্ঞাপনটি' : 'এই ব্যবহারকারীকে'} কেন রিপোর্ট করতে চান তা আমাদের জানান। আপনার রিপোর্ট গোপন রাখা হবে।
+              {targetType === 'Listing' ? 'এই বিজ্ঞাপনটি' : 'এই ব্যবহারকারীকে'} কেন রিপোর্ট করছেন? আপনার পরিচয় গোপন রাখা হবে।
             </p>
 
             <div className="report-reasons-group">
-              <label className="form-label mb-2 block">রিপোর্টের কারণ *</label>
               {REPORT_REASONS.map((r) => (
-                <div 
-                  key={r} 
-                  className={`report-reason-option ${reason === r ? 'selected' : ''}`}
-                  onClick={() => setReason(r)}
-                >
+                <label key={r.value} className={`report-reason-option ${reason === r.value ? 'selected' : ''}`}>
                   <input
                     type="radio"
                     name="reportReason"
-                    value={r}
-                    checked={reason === r}
-                    onChange={(e) => setReason(e.target.value)}
+                    value={r.value}
+                    checked={reason === r.value}
+                    onChange={() => setReason(r.value)}
                   />
-                  <label>{r}</label>
-                </div>
+                  <span>{r.label}</span>
+                </label>
               ))}
             </div>
 
             <div className="form-group">
-              <label className="form-label">বিস্তারিত বর্ণনা করুন *</label>
+              <label className="form-label" htmlFor="report-desc">বিস্তারিত লিখুন *</label>
               <textarea
+                id="report-desc"
                 className="form-control"
                 rows={4}
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 maxLength={1000}
-                placeholder="সমস্যাটি সম্পর্কে বিস্তারিত লিখুন..."
+                placeholder="কী ঘটেছে সংক্ষেপে লিখুন…"
                 required
               />
-              <div className="text-right text-xs text-muted mt-1">
-                {description.length}/1000
-              </div>
+              <div className="text-right text-xs text-muted">{description.length}/1000</div>
             </div>
+            <p className="text-xs text-muted" style={{ margin: 0 }}>মিথ্যা রিপোর্ট করলে আপনার অ্যাকাউন্টের বিরুদ্ধে ব্যবস্থা নেওয়া হতে পারে।</p>
           </div>
 
           <div className="report-modal-footer">
-            <button 
-              type="button" 
-              className="btn btn-outline" 
-              onClick={onClose}
-              disabled={isSubmitting}
-            >
-              বাতিল
-            </button>
-            <button 
-              type="submit" 
-              className="btn"
-              style={{ backgroundColor: '#dc2626', color: 'white' }}
-              disabled={isSubmitting || !reason || !description.trim()}
-            >
-              {isSubmitting ? 'জমা দেওয়া হচ্ছে...' : 'রিপোর্ট জমা দিন'}
+            <button type="button" className="btn btn-outline" onClick={onClose} disabled={isSubmitting}>বাতিল</button>
+            <button type="submit" className="btn btn-danger" disabled={isSubmitting || !description.trim()}>
+              {isSubmitting ? 'জমা দেওয়া হচ্ছে…' : 'রিপোর্ট জমা দিন'}
             </button>
           </div>
         </form>

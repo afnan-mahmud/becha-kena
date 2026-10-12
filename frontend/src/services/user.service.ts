@@ -6,7 +6,7 @@ export const getMe = async (): Promise<ApiResponse<IUser>> => {
   return response.data;
 };
 
-export const updateProfile = async (data: { displayName?: string }): Promise<ApiResponse<IUser>> => {
+export const updateProfile = async (data: { displayName?: string; fcmToken?: string }): Promise<ApiResponse<IUser>> => {
   const response = await api.put<ApiResponse<IUser>>('/users/me', data);
   return response.data;
 };

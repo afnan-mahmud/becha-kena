@@ -61,3 +61,21 @@ export const THANAS: Record<string, string[]> = {
   'শেরপুর': ['নকলা', 'শ্রীবরদী', 'ঝিনাইগাতী'],
   'নেত্রকোনা': ['কেন্দুয়া', 'মোহনগঞ্জ', 'কলমাকান্দা'],
 };
+
+/**
+ * Approximate centre of each division as [longitude, latitude] (GeoJSON order).
+ * Used as the listing's map point so "near me" search works without exposing the seller's exact address.
+ */
+export const DIVISION_COORDINATES: Record<string, [number, number]> = {
+  'ঢাকা': [90.4125, 23.8103],
+  'চট্টগ্রাম': [91.7832, 22.3569],
+  'রাজশাহী': [88.6042, 24.3745],
+  'খুলনা': [89.5403, 22.8456],
+  'বরিশাল': [90.3535, 22.701],
+  'সিলেট': [91.8687, 24.8949],
+  'রংপুর': [89.2752, 25.7439],
+  'ময়মনসিংহ': [90.4203, 24.7471],
+};
+
+export const getDivisionCoordinates = (division?: string): [number, number] =>
+  (division && DIVISION_COORDINATES[division]) || DIVISION_COORDINATES['ঢাকা'];

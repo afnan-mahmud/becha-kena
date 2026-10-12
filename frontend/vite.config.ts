@@ -8,8 +8,14 @@ export default defineConfig({
     port: 4001,
     proxy: {
       '/api': {
-        target: 'http://localhost:4000',
+        target: 'http://localhost:5000',
         changeOrigin: true,
+      },
+      // Socket.io (chat) — same origin in dev so the auth cookie is sent
+      '/socket.io': {
+        target: 'http://localhost:5000',
+        changeOrigin: true,
+        ws: true,
       }
     }
   },

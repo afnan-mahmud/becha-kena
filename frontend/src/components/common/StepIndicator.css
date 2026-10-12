@@ -3,8 +3,8 @@
   align-items: center;
   justify-content: space-between;
   width: 100%;
-  padding: 20px 0;
-  margin-bottom: 24px;
+  padding: 8px 0 0;
+  margin-bottom: 0;
 }
 
 .step-item {
@@ -17,8 +17,8 @@
 }
 
 .step-circle {
-  width: 32px;
-  height: 32px;
+  width: 34px;
+  height: 34px;
   border-radius: 50%;
   background-color: var(--surface-color);
   border: 2px solid var(--border-color);
@@ -54,9 +54,10 @@
 
 /* Active State */
 .step-item.active .step-circle {
-  border-color: var(--primary-color);
-  background-color: var(--primary-light);
-  color: var(--primary-color);
+  border-color: var(--color-primary);
+  background-color: var(--color-primary);
+  color: #fff;
+  box-shadow: var(--shadow-focus);
 }
 
 .step-item.active .step-label {
@@ -66,9 +67,9 @@
 
 /* Completed State */
 .step-item.completed .step-circle {
-  background-color: var(--success-color);
-  border-color: var(--success-color);
-  color: white;
+  background-color: var(--color-primary-soft);
+  border-color: var(--color-primary);
+  color: var(--color-primary);
 }
 
 .step-item.completed .step-label {
@@ -76,7 +77,7 @@
 }
 
 .step-item.completed .step-line {
-  background-color: var(--success-color);
+  background-color: var(--color-primary);
 }
 
 @media (max-width: 640px) {

@@ -1,31 +1,22 @@
 .skip-link {
   position: absolute;
-  top: -40px;
-  left: 0;
-  background: var(--primary-color);
-  color: white;
-  padding: 8px;
+  top: -48px;
+  left: 8px;
+  background: var(--color-primary);
+  color: #fff;
+  padding: 8px 14px;
+  border-radius: var(--radius-sm);
   z-index: 9999;
   transition: top 0.2s;
 }
 
-.skip-link:focus {
-  top: 0;
-}
+.skip-link:focus { top: 8px; color: #fff; }
 
 .app-layout {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
+  min-height: 100dvh;
 }
 
-.main-content {
-  flex: 1; /* This pushes the footer to the bottom when content is small */
-  padding-bottom: 0; /* Default for desktop */
-}
-
-@media (max-width: 768px) {
-  .main-content {
-    padding-bottom: 70px; /* Space for MobileBottomNav */
-  }
-}
+.main-content { flex: 1; }

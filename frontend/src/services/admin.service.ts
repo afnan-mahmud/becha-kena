@@ -34,8 +34,12 @@ export const getKYCQueue = async (page?: number): Promise<PaginatedResponse<IVer
   return response.data;
 };
 
-export const resolveVerification = async (logId: string, action: 'approve' | 'reject'): Promise<ApiResponse<IVerificationLog>> => {
-  const response = await api.patch<ApiResponse<IVerificationLog>>(`/admin/kyc/${logId}`, { action });
+export const resolveVerification = async (
+  logId: string,
+  action: 'approve' | 'reject',
+  extra: { verifiedName?: string; reason?: string } = {}
+): Promise<ApiResponse<IVerificationLog>> => {
+  const response = await api.patch<ApiResponse<IVerificationLog>>(`/admin/kyc/${logId}`, { action, ...extra });
   return response.data;
 };
 
