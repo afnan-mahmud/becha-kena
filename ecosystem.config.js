@@ -14,4 +14,11 @@ module.exports = {
       },
     },
   ],
+
+  // Frontend Note:
+  // Frontend is a Vite React SPA (static files after build).
+  // Nginx serves /var/www/becha-kena/frontend/dist directly.
+  // No PM2 needed for frontend.
+  //
+  // Build command: cd /var/www/becha-kena/frontend && npm run build
 };
