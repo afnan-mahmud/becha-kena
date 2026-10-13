@@ -49,24 +49,24 @@ function CategoryTile({
   // Animated scale when selection changes
   useEffect(() => {
     if (isSelected) {
-      scale.value = withSequence(
+      scale.set(withSequence(
         withSpring(1.08, { damping: 10, stiffness: 300 }),
         withSpring(1.04, { damping: 12, stiffness: 200 })
-      );
+      ));
     } else {
-      scale.value = withSpring(1, { damping: 12, stiffness: 200 });
+      scale.set(withSpring(1, { damping: 12, stiffness: 200 }));
     }
   }, [isSelected]);
 
   const handlePressIn = () => {
-    scale.value = withSpring(0.92, { damping: 10, stiffness: 300 });
+    scale.set(withSpring(0.92, { damping: 10, stiffness: 300 }));
   };
 
   const handlePressOut = () => {
-    scale.value = withSpring(isSelected ? 1.04 : 1, {
+    scale.set(withSpring(isSelected ? 1.04 : 1, {
       damping: 10,
       stiffness: 200,
-    });
+    }));
   };
 
   const animatedStyle = useAnimatedStyle(() => ({

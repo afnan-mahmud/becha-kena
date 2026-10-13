@@ -20,7 +20,7 @@ function ConfettiDot({ index, size, color }: { index: number; size: number; colo
   const distance = size * 0.85;
 
   useEffect(() => {
-    progress.value = withDelay(180, withTiming(1, { duration: 650, easing: Easing.out(Easing.cubic) }));
+    progress.set(withDelay(180, withTiming(1, { duration: 650, easing: Easing.out(Easing.cubic) })));
   }, [progress]);
 
   const style = useAnimatedStyle(() => ({
@@ -47,8 +47,8 @@ export function SuccessCheck({ size = 96, color = '#00704A' }: { size?: number; 
   useEffect(() => {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
     if (reduceMotion) return;
-    circle.value = withSpring(1, { damping: 12, stiffness: 160 });
-    check.value = withDelay(220, withSpring(1, { damping: 9, stiffness: 220 }));
+    circle.set(withSpring(1, { damping: 12, stiffness: 160 }));
+    check.set(withDelay(220, withSpring(1, { damping: 9, stiffness: 220 })));
   }, [circle, check, reduceMotion]);
 
   const circleStyle = useAnimatedStyle(() => ({ transform: [{ scale: circle.value }] }));

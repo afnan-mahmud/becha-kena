@@ -16,15 +16,15 @@ export function OfflineBanner() {
   const insets = useSafeAreaInsets();
   const [visible, setVisible] = useState(!isConnected);
   const translateY = useSharedValue(-80);
+  if (!isConnected && !visible) setVisible(true);
 
   useEffect(() => {
     if (!isConnected) {
-      setVisible(true);
-      translateY.value = withTiming(0, { duration: 250 });
+      translateY.set(withTiming(0, { duration: 250 }));
     } else {
-      translateY.value = withTiming(-80, { duration: 250 }, (done) => {
+      translateY.set(withTiming(-80, { duration: 250 }, (done) => {
         if (done) scheduleOnRN(setVisible, false);
-      });
+      }));
     }
   }, [isConnected, translateY]);
 

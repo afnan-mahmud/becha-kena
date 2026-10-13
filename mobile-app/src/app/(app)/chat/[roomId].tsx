@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -61,7 +61,7 @@ export default function ConversationScreen() {
   const [safetyDismissed, setSafetyDismissed] = useState(false);
   const [reviewOpen, setReviewOpen] = useState(false);
   const [reviewed, setReviewedLocally] = useHasReviewed(room?.listing?.id);
-  const openedAt = useRef(Date.now());
+  const [openedAt] = useState(() => Date.now());
 
   // ─── Lifecycle: active room, history, socket room ──────────────────────────
   useEffect(() => {
@@ -121,10 +121,10 @@ export default function ConversationScreen() {
         <ChatBubble
           message={item.message}
           isMine={item.message.senderId === me?.id}
-          animate={new Date(item.message.createdAt).getTime() > openedAt.current}
+          animate={new Date(item.message.createdAt).getTime() > openedAt}
         />
       ),
-    [me?.id]
+    [me?.id, openedAt]
   );
 
   // ─── Sending ───────────────────────────────────────────────────────────────

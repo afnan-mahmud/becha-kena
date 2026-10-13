@@ -19,7 +19,6 @@ import Animated, {
   useAnimatedStyle,
   useSharedValue,
   withSpring,
-  withTiming,
 } from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -95,18 +94,18 @@ function ZoomableImage({
 
   const reset = () => {
     'worklet';
-    scale.value = withSpring(1);
-    tx.value = withSpring(0);
-    ty.value = withSpring(0);
+    scale.set(withSpring(1));
+    tx.set(withSpring(0));
+    ty.set(withSpring(0));
     scheduleOnRN(setZoom, false);
   };
 
   const pinch = Gesture.Pinch()
     .onStart(() => {
-      startScale.value = scale.value;
+      startScale.set(scale.value);
     })
     .onUpdate((e) => {
-      scale.value = Math.min(4, Math.max(1, startScale.value * e.scale));
+      scale.set(Math.min(4, Math.max(1, startScale.value * e.scale)));
     })
     .onEnd(() => {
       if (scale.value < 1.05) reset();
@@ -119,24 +118,24 @@ function ZoomableImage({
       if (scale.value > 1) {
         reset();
       } else {
-        scale.value = withSpring(2.5);
+        scale.set(withSpring(2.5));
         scheduleOnRN(setZoom, true);
       }
     });
 
   const pan = Gesture.Pan()
     .onStart(() => {
-      startX.value = tx.value;
-      startY.value = ty.value;
+      startX.set(tx.value);
+      startY.set(ty.value);
     })
     .onUpdate((e) => {
       if (scale.value > 1) {
         const mx = clampX(scale.value);
         const my = clampY(scale.value);
-        tx.value = Math.min(mx, Math.max(-mx, startX.value + e.translationX));
-        ty.value = Math.min(my, Math.max(-my, startY.value + e.translationY));
+        tx.set(Math.min(mx, Math.max(-mx, startX.value + e.translationX)));
+        ty.set(Math.min(my, Math.max(-my, startY.value + e.translationY)));
       } else {
-        dismissY.value = e.translationY;
+        dismissY.set(e.translationY);
       }
     })
     .onEnd((e) => {
@@ -144,7 +143,7 @@ function ZoomableImage({
       if (Math.abs(dismissY.value) > 120 || Math.abs(e.velocityY) > 900) {
         scheduleOnRN(onDismiss);
       } else {
-        dismissY.value = withSpring(0);
+        dismissY.set(withSpring(0));
       }
     });
 
@@ -248,7 +247,7 @@ export function ImageCarousel({ images, height = 300, showCounter = true, onImag
   const listRef = useRef<FlatList<string>>(null);
 
   const onScroll = useAnimatedScrollHandler((e) => {
-    scrollX.value = e.contentOffset.x;
+    scrollX.set(e.contentOffset.x);
   });
 
   const handleMomentumEnd = (e: NativeSyntheticEvent<NativeScrollEvent>) => {

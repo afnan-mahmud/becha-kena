@@ -25,11 +25,11 @@ export function Skeleton({ width = '100%', height = 14, radius = Radius.sm, styl
 
   useEffect(() => {
     if (reduceMotion) return;
-    opacity.value = withRepeat(
+    opacity.set(withRepeat(
       withTiming(1, { duration: 750, easing: Easing.inOut(Easing.ease) }),
       -1,
       true
-    );
+    ));
   }, [opacity, reduceMotion]);
 
   const animatedStyle = useAnimatedStyle(() => ({ opacity: opacity.value }));

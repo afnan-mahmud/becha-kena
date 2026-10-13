@@ -11,7 +11,7 @@ export function StepProgress({ step, total, title }: { step: number; total: numb
   const progress = useSharedValue(step / total);
 
   useEffect(() => {
-    progress.value = withTiming(step / total, { duration: 300 });
+    progress.set(withTiming(step / total, { duration: 300 }));
   }, [step, total, progress]);
 
   const barStyle = useAnimatedStyle(() => ({ width: `${progress.value * 100}%` }));

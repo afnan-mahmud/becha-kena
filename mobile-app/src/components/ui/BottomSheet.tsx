@@ -67,6 +67,8 @@ export function BottomSheet({
   const openHeight = snapHeights[initialSnap] ?? snapHeights[0];
 
   const [mounted, setMounted] = useState(visible);
+  // Mount as soon as we become visible (render-time update, no effect needed)
+  if (visible && !mounted) setMounted(true);
   // The sheet's visible height moves between snap points; translateY is only
   // used for the open / close slide and for dragging below the lowest snap.
   const height = useSharedValue(openHeight);
@@ -78,36 +80,35 @@ export function BottomSheet({
 
   useEffect(() => {
     if (visible) {
-      setMounted(true);
-      height.value = openHeight;
-      translateY.value = openHeight;
-      translateY.value = withSpring(0, SPRING);
-      backdrop.value = withTiming(1, { duration: 220 });
+      height.set(openHeight);
+      translateY.set(openHeight);
+      translateY.set(withSpring(0, SPRING));
+      backdrop.set(withTiming(1, { duration: 220 }));
     } else if (mounted) {
-      backdrop.value = withTiming(0, { duration: 200 });
-      translateY.value = withTiming(
+      backdrop.set(withTiming(0, { duration: 200 }));
+      translateY.set(withTiming(
         height.value + 40,
         { duration: 220, easing: Easing.in(Easing.cubic) },
         (finished) => {
           if (finished) scheduleOnRN(finishClose);
         }
-      );
+      ));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [visible]);
 
   const pan = Gesture.Pan()
     .onStart(() => {
-      dragStartHeight.value = height.value + translateY.value * -1;
+      dragStartHeight.set(height.value + translateY.value * -1);
     })
     .onUpdate((e) => {
       const proposed = dragStartHeight.value - e.translationY;
       if (proposed >= minHeight) {
-        height.value = Math.min(proposed, maxHeight);
-        translateY.value = 0;
+        height.set(Math.min(proposed, maxHeight));
+        translateY.set(0);
       } else {
-        height.value = minHeight;
-        translateY.value = minHeight - proposed;
+        height.set(minHeight);
+        translateY.set(minHeight - proposed);
       }
     })
     .onEnd((e) => {
@@ -127,8 +128,8 @@ export function BottomSheet({
           target = h;
         }
       }
-      translateY.value = withSpring(0, SPRING);
-      height.value = withSpring(target, SPRING);
+      translateY.set(withSpring(0, SPRING));
+      height.set(withSpring(target, SPRING));
     });
 
   const sheetStyle = useAnimatedStyle(() => ({

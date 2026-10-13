@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useRef, useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -11,6 +11,7 @@ import {
 import { useRouter, useFocusEffect } from 'expo-router';
 import { kycService, VerificationLog } from '@/services/kyc.service';
 import { useAuthStore } from '@/store/auth.store';
+import { SuccessCheck } from '@/components/ui/SuccessCheck';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -75,16 +76,16 @@ function ApprovedState() {
   const router = useRouter();
   return (
     <View style={st.centeredCard}>
-      <Text style={[st.bigIcon, { fontSize: 56 }]}>🎉</Text>
+      <SuccessCheck size={84} />
       <Text style={[st.stateTitle, { color: '#00704A' }]}>
-        অভিনন্দন! আপনি এখন ভেরিফাইড
+        অভিনন্দন! আপনি এখন ভেরিফাইড 🎉
       </Text>
       <Text style={st.stateSubtitle}>
         এখন থেকে বিজ্ঞাপন দিতে, চ্যাট করতে ও বিক্রেতার নম্বর দেখতে পারবেন।
       </Text>
       <TouchableOpacity
         style={st.primaryBtn}
-        onPress={() => router.replace('/(app)/(tabs)/home')}
+        onPress={() => router.replace('/(app)/(tabs)/post')}
         activeOpacity={0.85}
       >
         <Text style={st.primaryBtnText}>প্রথম বিজ্ঞাপন দিন →</Text>

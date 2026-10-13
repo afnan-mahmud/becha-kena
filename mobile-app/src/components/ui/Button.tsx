@@ -1,20 +1,22 @@
 import React from 'react';
 import {
-  TouchableOpacity,
-  TouchableOpacityProps,
+  PressableProps,
   StyleSheet,
   ActivityIndicator,
+  StyleProp,
   ViewStyle,
   TextStyle,
   View,
 } from 'react-native';
-import { useTheme, Radius, Typography } from '@/constants/theme';
+import { PressableScale } from './PressableScale';
+import { useTheme, Radius } from '@/constants/theme';
 import { AppText } from './AppText';
 
 export type ButtonVariant = 'primary' | 'accent' | 'outline' | 'ghost' | 'danger';
 export type ButtonSize = 'sm' | 'md' | 'lg';
 
-export interface ButtonProps extends TouchableOpacityProps {
+export interface ButtonProps extends Omit<PressableProps, 'style' | 'children'> {
+  style?: StyleProp<ViewStyle>;
   title?: string;
   variant?: ButtonVariant;
   size?: ButtonSize;
@@ -129,11 +131,15 @@ export const Button: React.FC<ButtonProps> = ({
   const fontSize = getTextSize();
 
   return (
-    <TouchableOpacity
+    <PressableScale
       style={[styles.base, getContainerStyle(), style]}
       disabled={isDisabled}
       onPress={onPress}
-      activeOpacity={0.8}
+      // light haptic tick on primary actions (Prompt 45)
+      haptic={variant === 'primary' || variant === 'accent' || variant === 'danger'}
+      accessibilityRole="button"
+      accessibilityState={{ disabled: isDisabled, busy: loading }}
+      accessibilityLabel={title}
       {...props}
     >
       {loading ? (
@@ -156,7 +162,7 @@ export const Button: React.FC<ButtonProps> = ({
           {rightIcon ? <View style={styles.iconMarginLeft}>{rightIcon}</View> : null}
         </View>
       )}
-    </TouchableOpacity>
+    </PressableScale>
   );
 };
 

@@ -49,10 +49,10 @@ function Star({
   useEffect(() => {
     if (readOnly || reduceMotion) return;
     if (filled) {
-      scale.value = withSequence(
+      scale.set(withSequence(
         withTiming(1.3, { duration: 90 }),
         withSpring(1, { damping: 8, stiffness: 260 })
-      );
+      ));
     }
   }, [filled, readOnly, reduceMotion, scale]);
 

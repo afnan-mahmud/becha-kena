@@ -19,6 +19,7 @@ import { CategoryScroll } from '@/components/common/CategoryScroll';
 import { KYCStatusBanner } from '@/components/kyc/KYCStatusBanner';
 import { useTheme, FontFamilies } from '@/constants/theme';
 import { useUiStore } from '@/store/ui.store';
+import { EmptyState } from '@/components/ui/EmptyState';
 import { LocationPicker } from '@/components/common/LocationPicker';
 
 const ALL_BANGLADESH = 'সারা বাংলাদেশ';
@@ -255,63 +256,15 @@ export default function HomeScreen() {
               </View>
             </View>
           ) : isError ? (
-            <View style={styles.emptyContainer}>
-              <Ionicons
-                name="alert-circle-outline"
-                size={48}
-                color="#DC2626"
-                style={styles.emptyIcon}
-              />
-              <Text
-                style={[
-                  styles.emptyTitle,
-                  { color: isDark ? colors.text : '#1B2420' },
-                ]}
-              >
-                বিজ্ঞাপন লোড করতে সমস্যা হয়েছে
-              </Text>
-              <Text
-                style={[styles.emptySubtitle, { color: colors.textSecondary }]}
-              >
-                ইন্টারনেট সংযোগ চেক করুন এবং পুনরায় চেষ্টা করুন
-              </Text>
-              <Pressable
-                onPress={() => refetch()}
-                style={[styles.retryButton, { backgroundColor: colors.primary }]}
-              >
-                <Text style={styles.retryButtonText}>আবার চেষ্টা করুন</Text>
-              </Pressable>
-            </View>
+            <EmptyState variant="error" title="বিজ্ঞাপন লোড করতে সমস্যা হয়েছে" onAction={() => refetch()} />
           ) : (
-            <View style={styles.emptyContainer}>
-              <Text style={styles.emptyEmoji}>📦</Text>
-              <Text
-                style={[
-                  styles.emptyTitle,
-                  { color: isDark ? colors.text : '#1B2420' },
-                ]}
-              >
-                এই এলাকায় এখনো কোনো বিজ্ঞাপন নেই
-              </Text>
-              <Text
-                style={[styles.emptySubtitle, { color: colors.textSecondary }]}
-              >
-                অন্যান্য বিভাগ বা এলাকা নির্বাচন করে দেখতে পারেন
-              </Text>
-              {division !== null && (
-                <Pressable
-                  onPress={() => setDivision(null)}
-                  style={[
-                    styles.retryButton,
-                    { backgroundColor: colors.primary },
-                  ]}
-                >
-                  <Text style={styles.retryButtonText}>
-                    সারা বাংলাদেশ দেখুন
-                  </Text>
-                </Pressable>
-              )}
-            </View>
+            <EmptyState
+              variant="noListings"
+              title="এই এলাকায় এখনো কোনো বিজ্ঞাপন নেই"
+              subtitle="অন্য বিভাগ বা এলাকা বেছে নিয়ে দেখতে পারেন"
+              actionLabel={division !== null ? 'সারা বাংলাদেশ দেখুন' : undefined}
+              onAction={division !== null ? () => setDivision(null) : undefined}
+            />
           )
         }
         ListFooterComponent={
@@ -441,45 +394,6 @@ const styles = StyleSheet.create({
   },
   skeletonRow: {
     flexDirection: 'row',
-  },
-  emptyContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 32,
-    marginTop: 24,
-  },
-  emptyIcon: {
-    marginBottom: 12,
-  },
-  emptyEmoji: {
-    fontSize: 48,
-    marginBottom: 12,
-  },
-  emptyTitle: {
-    fontSize: 16,
-    lineHeight: 22,
-    fontWeight: '600',
-    fontFamily: FontFamilies.semiBold,
-    textAlign: 'center',
-    marginBottom: 6,
-  },
-  emptySubtitle: {
-    fontSize: 13,
-    lineHeight: 18,
-    fontFamily: FontFamilies.regular,
-    textAlign: 'center',
-    marginBottom: 16,
-  },
-  retryButton: {
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 8,
-  },
-  retryButtonText: {
-    color: '#FFFFFF',
-    fontSize: 14,
-    fontWeight: '600',
-    fontFamily: FontFamilies.semiBold,
   },
   footerLoader: {
     paddingVertical: 20,

@@ -94,23 +94,23 @@ function AnimatedTabItem({
   // Small scale/bounce animation on active icon
   useEffect(() => {
     if (isFocused) {
-      iconScale.value = withSequence(
+      iconScale.set(withSequence(
         withTiming(0.82, { duration: 80 }),
         withSpring(1.22, { damping: 5, stiffness: 280 }),
         withSpring(1, { damping: 10, stiffness: 200 })
-      );
+      ));
     } else {
-      iconScale.value = withTiming(1, { duration: 150 });
+      iconScale.set(withTiming(1, { duration: 150 }));
     }
   }, [isFocused]);
 
   // Unread badge pop animation when count changes
   useEffect(() => {
     if (showBadge && (badgeCount ?? 0) > 0) {
-      badgeScale.value = withSequence(
+      badgeScale.set(withSequence(
         withSpring(1.35, { damping: 4, stiffness: 300 }),
         withSpring(1, { damping: 10, stiffness: 180 })
-      );
+      ));
     }
   }, [badgeCount, showBadge]);
 
@@ -197,11 +197,11 @@ function RaisedCenterButton({
   const buttonScale = useSharedValue(1);
 
   const handlePressIn = () => {
-    buttonScale.value = withTiming(0.9, { duration: 80 });
+    buttonScale.set(withTiming(0.9, { duration: 80 }));
   };
 
   const handlePressOut = () => {
-    buttonScale.value = withSpring(1, { damping: 9, stiffness: 220 });
+    buttonScale.set(withSpring(1, { damping: 9, stiffness: 220 }));
   };
 
   const animatedButtonStyle = useAnimatedStyle(() => ({
@@ -340,6 +340,7 @@ export default function TabsLayout() {
       tabBar={(props) => <CustomTabBar {...props} />}
       screenOptions={{
         headerShown: false,
+        animation: 'fade', // tabs crossfade (Prompt 45)
       }}
     >
       <Tabs.Screen

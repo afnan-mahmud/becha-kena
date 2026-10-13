@@ -60,14 +60,17 @@ export function ReviewModal({
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
 
-  useEffect(() => {
+  // Fresh form every time the sheet opens
+  const [wasVisible, setWasVisible] = useState(visible);
+  if (visible !== wasVisible) {
+    setWasVisible(visible);
     if (visible) {
       setRating(0);
       setText('');
       setError(null);
       setDone(false);
     }
-  }, [visible]);
+  }
 
   const finishReviewed = async () => {
     if (!target) return;

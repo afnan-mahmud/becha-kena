@@ -29,7 +29,7 @@ export function ChatInput({ value, onChangeText, onSend, onTyping, disabled = fa
 
   const send = () => {
     if (!canSend) return;
-    scale.value = withSequence(withTiming(0.85, { duration: 80 }), withSpring(1, { damping: 10, stiffness: 260 }));
+    scale.set(withSequence(withTiming(0.85, { duration: 80 }), withSpring(1, { damping: 10, stiffness: 260 })));
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
     onSend(value);
   };

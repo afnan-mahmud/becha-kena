@@ -107,6 +107,7 @@ export async function notifyStatusChange(
  * - app in background / inactive → local notification
  */
 export function notifyIncomingMessage(message: Message) {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports -- lazy require breaks an import cycle
   const { useChatStore } = require('@/store/chat.store');
   const activeRoomId: string | null = useChatStore.getState().activeRoomId;
   const senderName = message.sender?.displayName ?? 'নতুন মেসেজ';

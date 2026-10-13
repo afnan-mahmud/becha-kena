@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { FontFamilies, Radius, useTheme } from '@/constants/theme';
@@ -55,25 +55,23 @@ export function FilterBottomSheet({ visible, onClose, value, onApply, initialSec
   const location = useLocation();
 
   // Fresh draft every time the sheet opens
-  useEffect(() => {
+  const [wasVisible, setWasVisible] = useState(visible);
+  if (visible !== wasVisible) {
+    setWasVisible(visible);
     if (visible) {
       setDraft(value);
       setPickingLocation(initialSection === 'location');
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [visible]);
+  }
 
   const update = (patch: Partial<SearchFilters>) => setDraft((d) => ({ ...d, ...patch }));
 
-  const scrollToInitial = () => {
-    if (!initialSection || initialSection === 'location') return;
-    const y = sectionY.current[initialSection];
-    if (y !== undefined) scrollRef.current?.scrollTo({ y: Math.max(0, y - 8), animated: false });
-  };
-
-  const onSectionLayout = (section: FilterSection) => (e: { nativeEvent: { layout: { y: number } } }) => {
-    sectionY.current[section] = e.nativeEvent.layout.y;
-    if (section === initialSection) scrollToInitial();
+  // Jump to the section whose chip opened the sheet
+  const handleSectionLayout = (section: FilterSection, y: number) => {
+    sectionY.current[section] = y;
+    if (section === initialSection) {
+      scrollRef.current?.scrollTo({ y: Math.max(0, y - 8), animated: false });
+    }
   };
 
   const chooseSort = async (sort: NonNullable<SearchFilters['sort']>) => {
@@ -148,7 +146,7 @@ export function FilterBottomSheet({ visible, onClose, value, onApply, initialSec
       ) : (
         <ScrollView ref={scrollRef} contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
           {/* 1. Category */}
-          <View onLayout={onSectionLayout('category')}>
+          <View onLayout={(e) => handleSectionLayout('category', e.nativeEvent.layout.y)}>
             {sectionTitle('ক্যাটাগরি')}
             <View style={styles.categoryGrid}>
               {CATEGORIES.map((c) => {
@@ -183,7 +181,7 @@ export function FilterBottomSheet({ visible, onClose, value, onApply, initialSec
           </View>
 
           {/* 2. Price */}
-          <View onLayout={onSectionLayout('price')}>
+          <View onLayout={(e) => handleSectionLayout('price', e.nativeEvent.layout.y)}>
             {sectionTitle('দাম')}
             <View style={styles.priceRow}>
               {(['minPrice', 'maxPrice'] as const).map((key) => (
@@ -222,7 +220,7 @@ export function FilterBottomSheet({ visible, onClose, value, onApply, initialSec
           </View>
 
           {/* 3. Condition */}
-          <View onLayout={onSectionLayout('condition')}>
+          <View onLayout={(e) => handleSectionLayout('condition', e.nativeEvent.layout.y)}>
             {sectionTitle('অবস্থা')}
             <View style={styles.wrap}>
               <Chip label="সব" selected={!draft.condition} onPress={() => update({ condition: undefined })} />
@@ -238,7 +236,7 @@ export function FilterBottomSheet({ visible, onClose, value, onApply, initialSec
           </View>
 
           {/* 4. Sort */}
-          <View onLayout={onSectionLayout('sort')}>
+          <View onLayout={(e) => handleSectionLayout('sort', e.nativeEvent.layout.y)}>
             {sectionTitle('সাজান')}
             {SORT_OPTIONS.map((o) => {
               const selected = (draft.sort ?? 'newest') === o.value;
@@ -278,7 +276,7 @@ export function FilterBottomSheet({ visible, onClose, value, onApply, initialSec
           </View>
 
           {/* 5. Area */}
-          <View onLayout={onSectionLayout('location')}>
+          <View onLayout={(e) => handleSectionLayout('location', e.nativeEvent.layout.y)}>
             {sectionTitle('এলাকা')}
             <Pressable
               onPress={() => setPickingLocation(true)}

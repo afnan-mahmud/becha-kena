@@ -38,6 +38,7 @@ export interface ChatState {
 
 // Lazy require avoids a require cycle (auth.store → chat.store → auth.store)
 const getMyId = (): string | undefined => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports -- lazy require breaks an import cycle
   const { useAuthStore } = require('@/store/auth.store');
   return useAuthStore.getState().user?.id;
 };
@@ -232,6 +233,7 @@ export function setupSocketListeners() {
     store().addMessage(message);
     // Banner / local notification for messages from the other person
     if (message.senderId !== getMyId()) {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports -- lazy require breaks an import cycle
       const { notifyIncomingMessage } = require('@/lib/notifications');
       notifyIncomingMessage(message);
     }

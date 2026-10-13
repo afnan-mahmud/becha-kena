@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useCallback, useRef, useState } from 'react';
 import {
   View,
   StyleSheet,
@@ -228,6 +228,8 @@ function PaginationDot({ index, scrollX, width, activeColor }: DotProps) {
   return <Animated.View style={[styles.dot, dotAnimatedStyle]} />;
 }
 
+const VIEWABILITY_CONFIG = { itemVisiblePercentThreshold: 50 };
+
 export default function WelcomeScreen() {
   const router = useRouter();
   const { colors } = useTheme();
@@ -243,21 +245,19 @@ export default function WelcomeScreen() {
 
   const scrollHandler = useAnimatedScrollHandler({
     onScroll: (event) => {
-      scrollX.value = event.contentOffset.x;
+      scrollX.set(event.contentOffset.x);
     },
   });
 
-  const onViewableItemsChanged = useRef(
+  // Must stay the same function for the FlatList's lifetime
+  const onViewableItemsChanged = useCallback(
     ({ viewableItems }: { viewableItems: ViewToken[] }) => {
       if (viewableItems.length > 0 && viewableItems[0].index !== null) {
         setActiveIndex(viewableItems[0].index);
       }
-    }
-  ).current;
-
-  const viewabilityConfig = useRef({
-    itemVisiblePercentThreshold: 50,
-  }).current;
+    },
+    []
+  );
 
   const handleFinish = async () => {
     await setOnboarded(true);
@@ -325,7 +325,7 @@ export default function WelcomeScreen() {
           onScroll={scrollHandler}
           scrollEventThrottle={16}
           onViewableItemsChanged={onViewableItemsChanged}
-          viewabilityConfig={viewabilityConfig}
+          viewabilityConfig={VIEWABILITY_CONFIG}
           renderItem={({ item, index }) => (
             <OnboardingSlideItem
               item={item}

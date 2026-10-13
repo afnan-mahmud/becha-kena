@@ -123,7 +123,7 @@ export function MarkAsSoldSheet({
     >
       <ScrollView contentContainerStyle={styles.content}>
         <AppText variant="bodySmall" color={colors.textSecondary} style={styles.intro} numberOfLines={2}>
-          "{listing?.title}" — ক্রেতা বেছে নিলে তিনি আপনাকে রিভিউ দিতে পারবেন।
+          “{listing?.title}” — ক্রেতা বেছে নিলে তিনি আপনাকে রিভিউ দিতে পারবেন।
         </AppText>
 
         {isLoading ? (

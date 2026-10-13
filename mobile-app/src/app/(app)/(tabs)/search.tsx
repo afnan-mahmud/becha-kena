@@ -48,15 +48,18 @@ export default function SearchScreen() {
 
   const [query, setQuery] = useState('');
   const debouncedQuery = useDebounced(query.trim(), 500);
-  const [filters, setFilters] = useState<SearchFilters>({ sort: 'newest' });
+  const [filters, setFilters] = useState<SearchFilters>(() => ({ sort: 'newest', category: params.category }));
   const [inputFocused, setInputFocused] = useState(false);
   const [recent, setRecent] = useState<string[]>([]);
   const [sheetSection, setSheetSection] = useState<FilterSection | null>(null);
 
-  // Category / focus coming from the home screen
-  useEffect(() => {
+  // Category coming from the home screen (render-time update when the params change)
+  const paramsKey = `${params.category ?? ''}|${params.t ?? ''}`;
+  const [lastParamsKey, setLastParamsKey] = useState(paramsKey);
+  if (paramsKey !== lastParamsKey) {
+    setLastParamsKey(paramsKey);
     if (params.category) setFilters((f) => ({ ...f, category: params.category }));
-  }, [params.category, params.t]);
+  }
 
   useEffect(() => {
     if (params.focus) {
@@ -78,10 +81,6 @@ export default function SearchScreen() {
     });
   }, []);
 
-  // Save terms the user actually searched for (after the debounce settles)
-  useEffect(() => {
-    if (debouncedQuery) rememberSearch(debouncedQuery);
-  }, [debouncedQuery, rememberSearch]);
 
   const activeFilters: SearchFilters = useMemo(
     () => ({ ...filters, search: debouncedQuery || undefined }),
@@ -152,7 +151,10 @@ export default function SearchScreen() {
             value={query}
             onChangeText={setQuery}
             onFocus={() => setInputFocused(true)}
-            onBlur={() => setInputFocused(false)}
+            onBlur={() => {
+              setInputFocused(false);
+              rememberSearch(query.trim()); // save terms the user actually searched for
+            }}
             onSubmitEditing={() => rememberSearch(query.trim())}
             placeholder="যেমন: iPhone 13, Yamaha FZ…"
             placeholderTextColor={colors.textMuted}

@@ -1,4 +1,4 @@
-import axios, { AxiosError, AxiosInstance, InternalAxiosRequestConfig } from 'axios';
+import axios, { AxiosError, AxiosInstance, InternalAxiosRequestConfig, isAxiosError } from 'axios';
 import { Alert } from 'react-native';
 import { router } from 'expo-router';
 import { API_URL, ENDPOINTS } from '@/constants/api';
@@ -72,6 +72,7 @@ export function refreshAccessToken(): Promise<string> {
 const forceLocalLogout = async () => {
   try {
     // Lazy require avoids a circular import (auth.store imports this file)
+    // eslint-disable-next-line @typescript-eslint/no-require-imports -- lazy require breaks an import cycle
     const { useAuthStore } = require('@/store/auth.store');
     await useAuthStore.getState().localLogout();
   } catch {
@@ -115,7 +116,7 @@ api.interceptors.response.use(
         return api(originalRequest);
       } catch (refreshErr) {
         // A network failure while refreshing is not a reason to log out
-        if (axios.isAxiosError(refreshErr) && !refreshErr.response) {
+        if (isAxiosError(refreshErr) && !refreshErr.response) {
           return Promise.reject(
             new ApiError({ message: 'ইন্টারনেট সংযোগ পরীক্ষা করুন', code: 'NETWORK_ERROR', status: 0 })
           );

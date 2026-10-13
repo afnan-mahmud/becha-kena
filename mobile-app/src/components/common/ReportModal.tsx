@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useQueryClient } from '@tanstack/react-query';
@@ -46,7 +46,10 @@ export function ReportModal({ targetType, targetId, targetName, visible, onClose
   const [error, setError] = useState<string | null>(null);
   const [reportId, setReportId] = useState<string | null>(null);
 
-  useEffect(() => {
+  // Fresh form every time the sheet opens
+  const [wasVisible, setWasVisible] = useState(visible);
+  if (visible !== wasVisible) {
+    setWasVisible(visible);
     if (visible) {
       setStep(0);
       setReason(null);
@@ -54,7 +57,7 @@ export function ReportModal({ targetType, targetId, targetName, visible, onClose
       setError(null);
       setReportId(null);
     }
-  }, [visible]);
+  }
 
   const submit = async () => {
     if (!reason) return;

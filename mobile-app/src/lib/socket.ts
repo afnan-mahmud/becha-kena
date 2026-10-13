@@ -79,6 +79,7 @@ const handleConnectError = async (err: Error) => {
 
   // Lazy requires avoid circular imports (api.ts / auth.store import this file indirectly)
   const logout = () => {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports -- lazy require breaks an import cycle
     const { useAuthStore } = require('@/store/auth.store');
     useAuthStore.getState().localLogout();
   };
@@ -93,6 +94,7 @@ const handleConnectError = async (err: Error) => {
     if (refreshAttempted) return; // the built-in reconnection keeps trying with backoff
     refreshAttempted = true;
     try {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports -- lazy require breaks an import cycle
       const { refreshAccessToken } = require('@/services/api');
       await refreshAccessToken();
       // Middleware rejections stop socket.io's auto-reconnect — reconnect manually

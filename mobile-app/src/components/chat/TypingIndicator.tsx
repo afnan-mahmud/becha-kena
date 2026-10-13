@@ -15,10 +15,10 @@ import { useTheme } from '@/constants/theme';
 function Dot({ delay, color }: { delay: number; color: string }) {
   const y = useSharedValue(0);
   useEffect(() => {
-    y.value = withDelay(
+    y.set(withDelay(
       delay,
       withRepeat(withSequence(withTiming(-5, { duration: 260 }), withTiming(0, { duration: 260 })), -1, false)
-    );
+    ));
   }, [delay, y]);
   const style = useAnimatedStyle(() => ({ transform: [{ translateY: y.value }] }));
   return <Animated.View style={[styles.dot, { backgroundColor: color }, style]} />;

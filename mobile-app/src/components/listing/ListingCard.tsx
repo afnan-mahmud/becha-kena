@@ -19,10 +19,9 @@ import Animated, {
   useReducedMotion,
 } from 'react-native-reanimated';
 import { useQueryClient } from '@tanstack/react-query';
-import { listingService } from '@/services/listing.service';
 import { STALE } from '@/lib/queryClient';
 import { Listing } from '@/types/listing.types';
-import { getSeller } from '@/services/listing.service';
+import { getSeller, listingService } from '@/services/listing.service';
 import { getCategoryLabel, getConditionLabel } from '@/constants/categories';
 import { formatDistance, formatPrice, formatRelativeTime, toBanglaDigits } from '@/lib/format';
 import { useTheme, FontFamilies } from '@/constants/theme';
@@ -98,7 +97,7 @@ export const ListingCard = React.memo(function ListingCard({
 
   const handlePressIn = () => {
     // Press-in scale animation (0.97)
-    if (!reduceMotion) scale.value = withSpring(0.97, { damping: 12, stiffness: 300 });
+    if (!reduceMotion) scale.set(withSpring(0.97, { damping: 12, stiffness: 300 }));
     // Warm the detail screen's cache while the finger is still down (Prompt 49)
     queryClient.prefetchQuery({
       queryKey: ['listing', listing.id],
@@ -108,7 +107,7 @@ export const ListingCard = React.memo(function ListingCard({
   };
 
   const handlePressOut = () => {
-    scale.value = withSpring(1, { damping: 12, stiffness: 200 });
+    scale.set(withSpring(1, { damping: 12, stiffness: 200 }));
   };
 
   const animatedStyle = useAnimatedStyle(() => ({
@@ -373,14 +372,14 @@ export function ListingCardSkeleton({
   const opacity = useSharedValue(0.4);
 
   React.useEffect(() => {
-    opacity.value = withRepeat(
+    opacity.set(withRepeat(
       withSequence(
         withTiming(0.85, { duration: 650 }),
         withTiming(0.35, { duration: 650 })
       ),
       -1,
       true
-    );
+    ));
   }, []);
 
   const animatedStyle = useAnimatedStyle(() => ({

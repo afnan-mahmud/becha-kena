@@ -45,11 +45,11 @@ export function PressableScale({
     <AnimatedPressable
       {...props}
       onPressIn={(e) => {
-        if (!reduceMotion) scale.value = withTiming(activeScale, { duration: 90 });
+        if (!reduceMotion) scale.set(withTiming(activeScale, { duration: 90 }));
         onPressIn?.(e);
       }}
       onPressOut={(e) => {
-        if (!reduceMotion) scale.value = withSpring(1, { damping: 14, stiffness: 260 });
+        if (!reduceMotion) scale.set(withSpring(1, { damping: 14, stiffness: 260 }));
         onPressOut?.(e);
       }}
       onPress={(e) => {

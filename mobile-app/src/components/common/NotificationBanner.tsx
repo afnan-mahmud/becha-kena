@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef } from 'react';
+import React, { useCallback, useEffect } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -48,44 +48,40 @@ function BannerItem({
   const reduceMotion = useReducedMotion();
   const translateY = useSharedValue(HIDDEN_Y);
   const opacity = useSharedValue(0);
-  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const hiding = useRef(false);
+  // Shared value instead of a ref: it is read from the gesture callback too
+  const hiding = useSharedValue(false);
 
   const finish = useCallback(() => onHidden(notification.id), [notification.id, onHidden]);
 
   const hide = useCallback(() => {
-    if (hiding.current) return;
-    hiding.current = true;
-    if (timer.current) clearTimeout(timer.current);
-    opacity.value = withTiming(0, { duration: 180 });
-    translateY.value = withTiming(
-      HIDDEN_Y,
-      { duration: reduceMotion ? 1 : 220, easing: Easing.in(Easing.cubic) },
-      (done) => {
+    if (hiding.get()) return;
+    hiding.set(true);
+    opacity.set(withTiming(0, { duration: 180 }));
+    translateY.set(
+      withTiming(HIDDEN_Y, { duration: reduceMotion ? 1 : 220, easing: Easing.in(Easing.cubic) }, (done) => {
         if (done) scheduleOnRN(finish);
-      }
+      })
     );
-  }, [finish, opacity, reduceMotion, translateY]);
+  }, [finish, hiding, opacity, reduceMotion, translateY]);
 
+  // Slide in, then auto-dismiss after 4s
   useEffect(() => {
-    opacity.value = withTiming(1, { duration: 200 });
-    translateY.value = reduceMotion ? 0 : withSpring(0, { damping: 18, stiffness: 200 });
-    timer.current = setTimeout(hide, AUTO_DISMISS_MS);
-    return () => {
-      if (timer.current) clearTimeout(timer.current);
-    };
+    opacity.set(withTiming(1, { duration: 200 }));
+    translateY.set(reduceMotion ? 0 : withSpring(0, { damping: 18, stiffness: 200 }));
+    const timer = setTimeout(hide, AUTO_DISMISS_MS);
+    return () => clearTimeout(timer);
   }, [hide, opacity, reduceMotion, translateY]);
 
   const swipeUp = Gesture.Pan()
     .activeOffsetY([-8, 8])
     .onUpdate((e) => {
-      translateY.value = Math.min(0, e.translationY);
+      translateY.set(Math.min(0, e.translationY));
     })
     .onEnd((e) => {
       if (e.translationY < -30 || e.velocityY < -500) {
         scheduleOnRN(hide);
       } else {
-        translateY.value = withSpring(0);
+        translateY.set(withSpring(0));
       }
     });
 

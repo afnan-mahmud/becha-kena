@@ -89,10 +89,7 @@ export function KYCStatusBanner({ showVerifiedBadge = false }: KYCStatusBannerPr
     mountedRef.current = true;
 
     // Already verified — no need to fetch
-    if (isVerified) {
-      setLogStatus('approved');
-      return;
-    }
+    if (isVerified) return;
 
     fetchWithCache()
       .then((log) => {
@@ -108,9 +105,6 @@ export function KYCStatusBanner({ showVerifiedBadge = false }: KYCStatusBannerPr
     };
   }, [isVerified]);
 
-  // Still loading
-  if (logStatus === null) return null;
-
   // Verified
   if (isVerified || logStatus === 'approved') {
     if (!showVerifiedBadge) return null;
@@ -120,6 +114,9 @@ export function KYCStatusBanner({ showVerifiedBadge = false }: KYCStatusBannerPr
       </View>
     );
   }
+
+  // Still loading
+  if (logStatus === null) return null;
 
   const config = getBannerConfig(logStatus);
   if (!config) return null;

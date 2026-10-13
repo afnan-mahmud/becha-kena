@@ -59,7 +59,7 @@ function OtpBox({
 
   // Box scale on focus animation
   useEffect(() => {
-    scale.value = withTiming(isFocused ? 1.08 : 1, { duration: 150 });
+    scale.set(withTiming(isFocused ? 1.08 : 1, { duration: 150 }));
   }, [isFocused]);
 
   const animatedStyle = useAnimatedStyle(() => ({
@@ -140,7 +140,7 @@ export const OtpInput: React.FC<OtpInputProps> = ({
 
   useEffect(() => {
     if (error) {
-      shakeOffset.value = withSequence(
+      shakeOffset.set(withSequence(
         withTiming(-12, { duration: 45 }),
         withTiming(12, { duration: 45 }),
         withTiming(-10, { duration: 45 }),
@@ -148,7 +148,7 @@ export const OtpInput: React.FC<OtpInputProps> = ({
         withTiming(-6, { duration: 45 }),
         withTiming(6, { duration: 45 }),
         withTiming(0, { duration: 45 })
-      );
+      ));
     }
   }, [error]);
 

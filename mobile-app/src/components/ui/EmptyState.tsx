@@ -5,6 +5,7 @@ import Animated, { FadeIn } from 'react-native-reanimated';
 import { useTheme } from '@/constants/theme';
 import { AppText } from './AppText';
 import { Button } from './Button';
+import { useNetworkStatus } from '@/hooks/useNetworkStatus';
 
 type IconName = keyof typeof Ionicons.glyphMap;
 
@@ -72,6 +73,13 @@ export function EmptyState({
   compact = false,
 }: EmptyStateProps) {
   const { colors } = useTheme();
+  const { isConnected } = useNetworkStatus();
+  // An error while offline is almost always the connection — say so (Prompt 46)
+  if (variant === 'error' && !isConnected) {
+    variant = 'offline';
+    title = undefined;
+    subtitle = undefined;
+  }
   const preset = PRESETS[variant];
 
   const toneColors = {
