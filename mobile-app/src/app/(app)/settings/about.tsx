@@ -1,7 +1,7 @@
 import React from 'react';
 import { Linking, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import Constants from 'expo-constants';
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { Radius, useTheme } from '@/constants/theme';
 import { SUPPORT_EMAIL, WEB_LINKS, WEB_URL } from '@/constants/api';
 import { openWebPage } from '@/lib/web';

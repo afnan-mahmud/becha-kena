@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { listingService } from '@/services/listing.service';
 import { Listing } from '@/types/listing.types';
@@ -74,9 +74,9 @@ export default function HomeScreen() {
       router.push({
         pathname: '/(app)/(tabs)/search',
         params: { category: categoryValue, t: String(Date.now()) },
-      } as any);
+      });
     } else {
-      router.push('/(app)/(tabs)/search' as any);
+      router.push('/(app)/(tabs)/search');
     }
   };
 
@@ -171,7 +171,7 @@ export default function HomeScreen() {
                 {/* Notification Bell */}
                 <Pressable
                   onPress={() =>
-                    router.push('/(app)/settings/notifications' as any)
+                    router.push('/(app)/settings/notifications')
                   }
                   style={[
                     styles.iconButton,
@@ -192,7 +192,7 @@ export default function HomeScreen() {
 
             {/* Search Pill */}
             <Pressable
-              onPress={() => router.push({ pathname: '/(app)/(tabs)/search', params: { focus: String(Date.now()) } } as any)}
+              onPress={() => router.push({ pathname: '/(app)/(tabs)/search', params: { focus: String(Date.now()) } })}
               style={[
                 styles.searchPill,
                 {

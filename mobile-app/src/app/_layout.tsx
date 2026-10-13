@@ -7,13 +7,12 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { focusManager, onlineManager, QueryClientProvider } from '@tanstack/react-query';
 import NetInfo from '@react-native-community/netinfo';
-import {
-  useFonts,
-  HindSiliguri_400Regular,
-  HindSiliguri_500Medium,
-  HindSiliguri_600SemiBold,
-  HindSiliguri_700Bold,
-} from '@expo-google-fonts/hind-siliguri';
+import { useFonts } from 'expo-font';
+// Per-weight imports so only the 4 weights we use are bundled (Prompt 49)
+import { HindSiliguri_400Regular } from '@expo-google-fonts/hind-siliguri/400Regular';
+import { HindSiliguri_500Medium } from '@expo-google-fonts/hind-siliguri/500Medium';
+import { HindSiliguri_600SemiBold } from '@expo-google-fonts/hind-siliguri/600SemiBold';
+import { HindSiliguri_700Bold } from '@expo-google-fonts/hind-siliguri/700Bold';
 import { useAuthStore } from '@/store/auth.store';
 import { useTheme } from '@/constants/theme';
 import { NotificationBanner } from '@/components/common/NotificationBanner';

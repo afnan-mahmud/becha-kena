@@ -9,11 +9,13 @@ import {
   saveUser as cacheUser,
   clearUser as clearCachedUser,
   clearSessionData,
+  getUser as getCachedUser,
   getRefreshToken,
   getOnboarded,
   setOnboarded as setStorageOnboarded,
 } from '@/lib/storage';
 import { apiClient } from '@/services/api';
+import { ApiError } from '@/types/api.types';
 import { ENDPOINTS } from '@/constants/api';
 import { disconnectSocket } from '@/lib/socket';
 import { useChatStore } from '@/store/chat.store';
@@ -177,8 +179,14 @@ export const useAuthStore = create<AuthState>()(
               } else {
                 await get().localLogout();
               }
-            } catch {
-              await get().localLogout();
+            } catch (err) {
+              // Offline at startup: keep the cached session instead of logging out (Prompt 46)
+              const cached = get().user ?? (await getCachedUser());
+              if (err instanceof ApiError && err.code === 'NETWORK_ERROR' && cached) {
+                set({ user: cached, isAuthenticated: true });
+              } else {
+                await get().localLogout();
+              }
             }
           } else {
             set({

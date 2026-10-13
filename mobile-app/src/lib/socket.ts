@@ -35,7 +35,7 @@ export interface ServerToClientEvents {
 }
 
 type EventName = keyof ServerToClientEvents;
-type AnyHandler = (...args: any[]) => void;
+type AnyHandler = (...args: unknown[]) => void;
 
 let socket: Socket | null = null;
 /** true while the app WANTS a connection (logged in + verified) */
@@ -53,11 +53,11 @@ const handlers = new Map<EventName, Set<AnyHandler>>();
 /** Subscribe to a server event. Works before/after connect; returns an unsubscribe fn. */
 export function onSocketEvent<E extends EventName>(event: E, handler: ServerToClientEvents[E]): () => void {
   if (!handlers.has(event)) handlers.set(event, new Set());
-  handlers.get(event)!.add(handler as AnyHandler);
-  socket?.on(event as string, handler as AnyHandler);
+  handlers.get(event)!.add(handler as unknown as AnyHandler);
+  socket?.on(event as string, handler as unknown as AnyHandler);
   return () => {
-    handlers.get(event)?.delete(handler as AnyHandler);
-    socket?.off(event as string, handler as AnyHandler);
+    handlers.get(event)?.delete(handler as unknown as AnyHandler);
+    socket?.off(event as string, handler as unknown as AnyHandler);
   };
 }
 

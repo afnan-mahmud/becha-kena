@@ -2,7 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { FlatList, Linking, Pressable, ScrollView, Share, StyleSheet, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { useQuery } from '@tanstack/react-query';
 import { Radius, Shadows, useTheme } from '@/constants/theme';
 import { WEB_LINKS } from '@/constants/api';

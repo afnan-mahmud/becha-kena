@@ -3,7 +3,7 @@ import { FlatList, Pressable, RefreshControl, StyleSheet, TextInput, View } from
 import { router, useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { FontFamilies, Radius, useTheme } from '@/constants/theme';
 import { formatChatTime, toBanglaDigits } from '@/lib/format';

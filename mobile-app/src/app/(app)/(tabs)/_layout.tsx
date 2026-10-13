@@ -2,7 +2,7 @@ import React, { useEffect } from 'react';
 import { View, Text, StyleSheet, Pressable, Platform } from 'react-native';
 import { Tabs } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -245,7 +245,9 @@ function RaisedCenterButton({
 /**
  * Custom Tab Bar Component
  */
-function CustomTabBar({ state, descriptors, navigation }: any) {
+type TabBarProps = Parameters<NonNullable<React.ComponentProps<typeof Tabs>['tabBar']>>[0];
+
+function CustomTabBar({ state, navigation }: TabBarProps) {
   const insets = useSafeAreaInsets();
   const { colors, isDark } = useTheme();
 
@@ -267,7 +269,7 @@ function CustomTabBar({ state, descriptors, navigation }: any) {
         },
       ]}
     >
-      {state.routes.map((route: any, index: number) => {
+      {state.routes.map((route, index) => {
         const isFocused = state.index === index;
         const config = TAB_CONFIGS[route.name];
 

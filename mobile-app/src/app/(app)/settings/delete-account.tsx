@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { StyleSheet, TextInput, View } from 'react-native';
 import { router } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import Animated, { FadeInRight } from 'react-native-reanimated';
 import { FontFamilies, Radius, useTheme } from '@/constants/theme';
 import { userService } from '@/services/user.service';

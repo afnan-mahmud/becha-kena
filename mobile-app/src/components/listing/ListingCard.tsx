@@ -7,7 +7,7 @@ import {
 } from 'react-native';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -118,7 +118,7 @@ export const ListingCard = React.memo(function ListingCard({
     if (onPress) {
       onPress();
     } else {
-      router.push(`/listing/${listing.id}` as any);
+      router.push(`/(app)/listing/${listing.id}`);
     }
   };
 

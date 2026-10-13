@@ -2,7 +2,7 @@ import React, { useCallback, useState } from 'react';
 import { Alert, Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { router, useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { Radius, Shadows, useTheme } from '@/constants/theme';
 import { formatMonthYear, maskPhone, toBanglaDigits } from '@/lib/format';
 import { useAuthStore } from '@/store/auth.store';

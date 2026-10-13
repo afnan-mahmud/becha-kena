@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import type { ApiError } from '@/types/api.types';
 import {
   View,
   StyleSheet,
@@ -9,7 +10,7 @@ import {
   Alert,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import * as Haptics from 'expo-haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Screen, AppText, Button } from '@/components/ui';
@@ -141,7 +142,8 @@ export default function VerifyOtpScreen() {
           );
         }
       }, 500);
-    } catch (err: any) {
+    } catch (e) {
+      const err = e as Partial<ApiError> | undefined;
       setHasError(true);
       setIsSuccess(false);
 
@@ -198,7 +200,8 @@ export default function VerifyOtpScreen() {
       setCountdown(newExpiresIn);
       setResendCount((prev) => prev + 1);
       setOtpCode('');
-    } catch (err: any) {
+    } catch (e) {
+      const err = e as Partial<ApiError> | undefined;
       if (err?.status === 429 || err?.code === 'RATE_LIMIT_EXCEEDED') {
         setErrorMessage('অনেকবার চেষ্টা করেছেন, এক ঘণ্টা পর আবার চেষ্টা করুন');
       } else {

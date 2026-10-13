@@ -1,6 +1,6 @@
 import React, { useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { FontFamilies, Radius, useTheme } from '@/constants/theme';
 import { CATEGORIES, CONDITIONS } from '@/constants/categories';
 import { formatLocation } from '@/constants/locations';

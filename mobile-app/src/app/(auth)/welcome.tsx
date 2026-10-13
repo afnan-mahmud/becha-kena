@@ -8,7 +8,7 @@ import {
   ViewToken,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import Animated, {
   useSharedValue,
   useAnimatedScrollHandler,
@@ -315,7 +315,7 @@ export default function WelcomeScreen() {
       {/* Swipeable Slides */}
       <View style={styles.carouselContainer}>
         <Animated.FlatList
-          ref={flatListRef as any}
+          ref={flatListRef}
           data={SLIDES}
           keyExtractor={(item) => item.id}
           horizontal

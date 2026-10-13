@@ -1,6 +1,6 @@
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import Animated, { SlideInLeft, SlideInRight } from 'react-native-reanimated';
 import { useTheme } from '@/constants/theme';
 import { formatChatTime } from '@/lib/format';

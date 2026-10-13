@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import type { ApiError } from '@/types/api.types';
 import {
   View,
   StyleSheet,
@@ -9,7 +10,7 @@ import {
   Platform,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import * as Haptics from 'expo-haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Screen, AppText, Button } from '@/components/ui';
@@ -89,7 +90,8 @@ export default function LoginScreen() {
           expiresIn: String(expiresIn),
         },
       });
-    } catch (err: any) {
+    } catch (e) {
+      const err = e as Partial<ApiError> | undefined;
       try {
         await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       } catch {

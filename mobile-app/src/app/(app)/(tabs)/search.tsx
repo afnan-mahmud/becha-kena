@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { FontFamilies, Radius, useTheme } from '@/constants/theme';
 import { getCategoryLabel, getConditionLabel } from '@/constants/categories';
 import { formatLocation } from '@/constants/locations';

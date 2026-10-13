@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { router } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { Radius, useTheme } from '@/constants/theme';
 import { maskPhone } from '@/lib/format';
 import { sanitizeDisplayName, stripHtml } from '@/lib/validators';

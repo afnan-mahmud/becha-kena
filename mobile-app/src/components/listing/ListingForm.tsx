@@ -1,7 +1,7 @@
 import React, { useMemo, useRef, useState } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, Switch, View } from 'react-native';
 import { Controller, useForm } from 'react-hook-form';
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import Animated, { FadeInRight, FadeOutLeft } from 'react-native-reanimated';
 import { FontFamilies, Radius, useTheme } from '@/constants/theme';
 import { CATEGORIES, CONDITIONS } from '@/constants/categories';
