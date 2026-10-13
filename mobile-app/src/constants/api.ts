@@ -35,6 +35,18 @@ export const SOCKET_URL = resolveUrl(
   4000
 );
 
+/** Public web app — used for share links, Terms and Privacy pages */
+export const WEB_URL = (process.env.EXPO_PUBLIC_WEB_URL || 'https://bechakena.com').replace(/\/$/, '');
+
+export const WEB_LINKS = {
+  listing: (id: string) => `${WEB_URL}/listings/${id}`,
+  user: (id: string) => `${WEB_URL}/user/${id}`,
+  terms: `${WEB_URL}/terms`,
+  privacy: `${WEB_URL}/privacy`,
+} as const;
+
+export const SUPPORT_EMAIL = 'support@bechakena.com';
+
 export const ENDPOINTS = {
   AUTH: {
     REQUEST_OTP: '/auth/request-otp',
