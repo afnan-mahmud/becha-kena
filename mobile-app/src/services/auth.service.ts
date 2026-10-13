@@ -1,18 +1,18 @@
-// Auth Service (To be implemented in Prompt 4)
+import { apiClient } from '@/services/api';
+import { ENDPOINTS } from '@/constants/api';
+import type { AuthPayload } from '@/types/api.types';
+
 export const authService = {
-  requestOtp: async (phoneNumber: string) => {
-    // POST /auth/request-otp
-    return { phoneNumber };
-  },
-  verifyOtp: async (phoneNumber: string, otpCode: string) => {
-    // POST /auth/verify-otp
-    return { phoneNumber, otpCode };
-  },
-  refreshToken: async (token: string) => {
-    // POST /auth/refresh
-    return { token };
-  },
-  logout: async () => {
-    // POST /auth/logout
-  },
+  /** POST /auth/request-otp → { expiresIn: 180 } */
+  requestOtp: (phoneNumber: string) =>
+    apiClient.post<{ expiresIn: number }>(ENDPOINTS.AUTH.REQUEST_OTP, { phoneNumber }),
+
+  /** POST /auth/verify-otp — otpCode must be a STRING */
+  verifyOtp: (phoneNumber: string, otpCode: string) =>
+    apiClient.post<AuthPayload>(ENDPOINTS.AUTH.VERIFY_OTP, { phoneNumber, otpCode: String(otpCode) }),
+
+  /** POST /auth/logout — invalidates every token of the user */
+  logout: () => apiClient.post<unknown>(ENDPOINTS.AUTH.LOGOUT),
 };
+
+export default authService;

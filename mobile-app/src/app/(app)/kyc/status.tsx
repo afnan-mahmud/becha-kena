@@ -60,9 +60,9 @@ function PendingState({ log }: { log: VerificationLog }) {
         সাধারণত ১২ ঘণ্টার মধ্যে ফলাফল জানানো হয়
       </Text>
       <View style={st.infoCard}>
-        <InfoRow label="আবেদনের ধরন" value={TYPE_LABEL[log.type] ?? log.type} />
+        <InfoRow label="আবেদনের ধরন" value={TYPE_LABEL[log.verificationType] ?? log.verificationType} />
         <View style={st.infoDivider} />
-        <InfoRow label="জমা দেওয়ার তারিখ" value={formatBanglaDate(log.submittedAt)} />
+        <InfoRow label="জমা দেওয়ার তারিখ" value={formatBanglaDate(log.createdAt)} />
       </View>
       <View style={st.pendingBadge}>
         <Text style={st.pendingBadgeText}>🔵 পর্যালোচনাধীন</Text>
@@ -104,10 +104,10 @@ function RejectedState({
     <View style={st.centeredCard}>
       <Text style={st.bigIcon}>❌</Text>
       <Text style={[st.stateTitle, { color: '#C53030' }]}>যাচাই বাতিল হয়েছে</Text>
-      {log.rejectionReason ? (
+      {log.manualReviewReason ? (
         <View style={st.rejectionBox}>
           <Text style={st.rejectionLabel}>কারণ:</Text>
-          <Text style={st.rejectionReason}>{log.rejectionReason}</Text>
+          <Text style={st.rejectionReason}>{log.manualReviewReason}</Text>
         </View>
       ) : null}
       <Text style={st.stateSubtitle}>
@@ -148,7 +148,7 @@ export default function KycStatusScreen() {
       setLog(result);
 
       // When it transitions to approved → sync auth store
-      if (result?.status === 'approved') {
+      if (result?.verificationStatus === 'approved') {
         await refreshUser();
         stopPolling();
       }
@@ -191,7 +191,7 @@ export default function KycStatusScreen() {
     );
   }
 
-  const status = log?.status ?? null;
+  const status = log?.verificationStatus ?? null;
 
   return (
     <ScrollView

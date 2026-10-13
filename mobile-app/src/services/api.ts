@@ -8,31 +8,9 @@ import {
   saveTokens,
   clearTokens,
 } from '@/lib/storage';
-import { ApiResponse, ApiErrorResponse } from '@/types/api.types';
+import { ApiResponse, ApiErrorBody, ApiError } from '@/types/api.types';
 
-export class ApiError extends Error {
-  code: string;
-  status: number;
-  details?: string[];
-
-  constructor({
-    message,
-    code,
-    status,
-    details,
-  }: {
-    message: string;
-    code: string;
-    status: number;
-    details?: string[];
-  }) {
-    super(message);
-    this.name = 'ApiError';
-    this.code = code;
-    this.status = status;
-    this.details = details;
-  }
-}
+export { ApiError };
 
 export const api: AxiosInstance = axios.create({
   baseURL: API_URL,
@@ -57,22 +35,49 @@ api.interceptors.request.use(
   }
 );
 
-// Token refresh queue management
-let isRefreshing = false;
-let failedQueue: Array<{
-  resolve: (token: string) => void;
-  reject: (error: unknown) => void;
-}> = [];
+// ─── Token refresh (single-flight) ────────────────────────────────────────────
+// Only ONE refresh request runs at a time; every caller waiting on a 401 shares it.
+let refreshPromise: Promise<string> | null = null;
 
-const processQueue = (error: unknown, token: string | null = null) => {
-  failedQueue.forEach((prom) => {
-    if (error) {
-      prom.reject(error);
-    } else if (token) {
-      prom.resolve(token);
-    }
-  });
-  failedQueue = [];
+/**
+ * POST /auth/refresh with the stored refresh token, saves the new access token
+ * and returns it. Throws if there is no refresh token or the server rejects it.
+ * Also used by the socket client (lib/socket.ts) when its token has expired.
+ */
+export function refreshAccessToken(): Promise<string> {
+  if (!refreshPromise) {
+    refreshPromise = (async () => {
+      const refreshToken = await getRefreshToken();
+      if (!refreshToken) throw new Error('NO_REFRESH_TOKEN');
+
+      // Plain axios (not `api`) so this request never goes through the interceptors
+      const res = await axios.post<ApiResponse<{ accessToken: string }>>(
+        `${API_URL}${ENDPOINTS.AUTH.REFRESH}`,
+        { refreshToken },
+        { timeout: 15000 }
+      );
+      const accessToken = res.data?.data?.accessToken;
+      if (!accessToken) throw new Error('REFRESH_FAILED');
+
+      // The refresh token is not rotated by the backend — keep the current one
+      await saveTokens({ accessToken, refreshToken });
+      return accessToken;
+    })().finally(() => {
+      refreshPromise = null;
+    });
+  }
+  return refreshPromise;
+}
+
+const forceLocalLogout = async () => {
+  try {
+    // Lazy require avoids a circular import (auth.store imports this file)
+    const { useAuthStore } = require('@/store/auth.store');
+    await useAuthStore.getState().localLogout();
+  } catch {
+    await clearTokens();
+    router.replace('/(auth)/login');
+  }
 };
 
 // Response Interceptor: 401 Refresh, 403 Suspended/KYC, and Error Normalization
@@ -80,7 +85,7 @@ api.interceptors.response.use(
   (response) => {
     return response;
   },
-  async (error: AxiosError<ApiErrorResponse>) => {
+  async (error: AxiosError<ApiErrorBody>) => {
     const originalRequest = error.config as InternalAxiosRequestConfig & {
       _retry?: boolean;
     };
@@ -99,66 +104,23 @@ api.interceptors.response.use(
     const { status, data } = error.response;
     const url = originalRequest?.url || '';
 
-    // Handle 401 Unauthorized (except on /auth/* routes)
+    // Handle 401 Unauthorized (except on /auth/* routes): refresh once, then retry
     if (status === 401 && !url.includes('/auth/') && originalRequest && !originalRequest._retry) {
-      if (isRefreshing) {
-        return new Promise<string>((resolve, reject) => {
-          failedQueue.push({ resolve, reject });
-        })
-          .then((token) => {
-            if (originalRequest.headers) {
-              originalRequest.headers.Authorization = `Bearer ${token}`;
-            }
-            return api(originalRequest);
-          })
-          .catch((err) => Promise.reject(err));
-      }
-
       originalRequest._retry = true;
-      isRefreshing = true;
-
       try {
-        const refreshToken = await getRefreshToken();
-        if (!refreshToken) {
-          throw new Error('NO_REFRESH_TOKEN');
-        }
-
-        // Call POST /auth/refresh with axios directly to avoid interceptor loop
-        const refreshResponse = await axios.post<{
-          success: boolean;
-          data: { accessToken: string };
-        }>(`${API_URL}${ENDPOINTS.AUTH.REFRESH}`, {
-          refreshToken,
-        });
-
-        const newAccessToken = refreshResponse.data?.data?.accessToken;
-        if (!newAccessToken) {
-          throw new Error('REFRESH_FAILED');
-        }
-
-        // Save new access token (keeps the current refresh token)
-        await saveTokens({
-          accessToken: newAccessToken,
-          refreshToken,
-        });
-
-        api.defaults.headers.common.Authorization = `Bearer ${newAccessToken}`;
-        processQueue(null, newAccessToken);
-
+        const newAccessToken = await refreshAccessToken();
         if (originalRequest.headers) {
           originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
         }
-
         return api(originalRequest);
       } catch (refreshErr) {
-        processQueue(refreshErr, null);
-        try {
-          const { useAuthStore } = require('@/store/auth.store');
-          useAuthStore.getState().localLogout();
-        } catch {
-          await clearTokens();
-          router.replace('/(auth)/login');
+        // A network failure while refreshing is not a reason to log out
+        if (axios.isAxiosError(refreshErr) && !refreshErr.response) {
+          return Promise.reject(
+            new ApiError({ message: 'ইন্টারনেট সংযোগ পরীক্ষা করুন', code: 'NETWORK_ERROR', status: 0 })
+          );
         }
+        await forceLocalLogout();
         return Promise.reject(
           new ApiError({
             message: 'লগইনের মেয়াদ শেষ হয়েছে, পুনরায় লগইন করুন',
@@ -166,21 +128,13 @@ api.interceptors.response.use(
             status: 401,
           })
         );
-      } finally {
-        isRefreshing = false;
       }
     }
 
     // Handle 403 Forbidden
     if (status === 403) {
       if (data?.code === 'ACCOUNT_SUSPENDED') {
-        try {
-          const { useAuthStore } = require('@/store/auth.store');
-          useAuthStore.getState().localLogout();
-        } catch {
-          await clearTokens();
-          router.replace('/(auth)/login');
-        }
+        await forceLocalLogout();
         Alert.alert(
           'অ্যাকাউন্ট স্থগিত',
           'আপনার অ্যাকাউন্টটি স্থগিত করা হয়েছে। সহায়তার জন্য প্রশাসকের সাথে যোগাযোগ করুন।'

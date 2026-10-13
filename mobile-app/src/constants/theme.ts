@@ -273,7 +273,8 @@ export type TypographyVariant =
  */
 export function useTheme() {
   const systemScheme = useColorScheme();
-  const themeMode = useUiStore?.getState?.()?.themeMode ?? 'system';
+  // Subscribe so every screen re-renders when the user switches theme in Settings
+  const themeMode = useUiStore((s) => s.themeMode);
 
   const resolvedScheme =
     themeMode === 'system'

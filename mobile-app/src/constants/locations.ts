@@ -91,3 +91,28 @@ export const ENGLISH_TO_BANGLA_DIVISION: Record<string, string> = {
 
 export const getDivisionCoordinates = (division?: string): [number, number] =>
   (division && DIVISION_COORDINATES[division]) || DIVISION_COORDINATES['ঢাকা'];
+
+export interface LocationSelection {
+  division?: string;
+  district?: string;
+  thana?: string;
+  /** [lng, lat] — the division centre (the backend stores approximate points only) */
+  coordinates?: [number, number];
+}
+
+/** "ধানমন্ডি, ঢাকা" style label (most specific two parts) */
+export const formatLocation = (loc?: Pick<LocationSelection, 'division' | 'district' | 'thana'> | null): string => {
+  if (!loc) return '';
+  const parts = [loc.thana, loc.district, loc.division].filter(Boolean) as string[];
+  // drop the repeated name in "ঢাকা, ঢাকা"
+  const unique = parts.filter((p, i) => parts.indexOf(p) === i);
+  return unique.slice(0, 2).join(', ');
+};
+
+/** Map an English region name from reverse geocoding ("Dhaka Division") to the Bangla division */
+export const toBanglaDivision = (region?: string | null): string | undefined => {
+  if (!region) return undefined;
+  const cleaned = region.replace(/\s*Division\s*/i, '').trim();
+  if ((DIVISIONS as readonly string[]).includes(cleaned)) return cleaned;
+  return ENGLISH_TO_BANGLA_DIVISION[cleaned];
+};

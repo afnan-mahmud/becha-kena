@@ -1,9 +1,17 @@
-// Report Service (To be implemented in Prompt 39)
+import { apiClient } from '@/services/api';
+import { ENDPOINTS } from '@/constants/api';
+import type { CreateReportBody, Report, ReportsPage } from '@/types/listing.types';
+
 export const reportService = {
-  createReport: async (_data: unknown) => {
-    // POST /reports
-  },
-  getMyReports: async () => {
-    // GET /reports/my
-  },
+  /** POST /reports — targetType is 'Listing' | 'User' (capitalised), description is required */
+  createReport: (body: CreateReportBody) =>
+    apiClient.post<Report>(ENDPOINTS.REPORTS.BASE, {
+      ...body,
+      description: body.description.trim(),
+    }),
+
+  /** GET /reports/my?page= */
+  getMyReports: (page = 1) => apiClient.get<ReportsPage>(ENDPOINTS.REPORTS.MY, { page }),
 };
+
+export default reportService;

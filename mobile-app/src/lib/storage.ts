@@ -142,11 +142,28 @@ export const saveRecentSearches = async (searches: string[]): Promise<void> => {
 };
 
 /**
+ * Per-account data kept in AsyncStorage (notification snapshots, push token…).
+ * Removed on logout / account deletion so the next account starts clean.
+ */
+const SESSION_KEYS = [
+  USER_KEY,
+  'bk_push_token',
+  'bk_last_kyc_status',
+  'bk_listing_snapshot',
+  'bk_expiry_reminders',
+  'bk_reviewed_listings',
+];
+
+export const clearSessionData = async (): Promise<void> => {
+  await AsyncStorage.multiRemove(SESSION_KEYS);
+};
+
+/**
  * Clear all storage (both secure tokens and async-storage data)
  */
 export const clearAll = async (): Promise<void> => {
   await clearTokens();
-  await AsyncStorage.multiRemove([USER_KEY, RECENT_SEARCHES_KEY]);
+  await AsyncStorage.multiRemove([...SESSION_KEYS, RECENT_SEARCHES_KEY]);
 };
 
 export const storage = {
@@ -161,5 +178,6 @@ export const storage = {
   getOnboarded,
   getRecentSearches,
   saveRecentSearches,
+  clearSessionData,
   clearAll,
 };

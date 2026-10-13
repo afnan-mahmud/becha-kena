@@ -13,6 +13,7 @@ import Animated, {
 import { useTheme, FontFamilies } from '@/constants/theme';
 import { useRequireVerified } from '@/hooks/useRequireVerified';
 import { useChatStore } from '@/store/chat.store';
+import { toBanglaDigits } from '@/lib/format';
 
 // Configuration for each tab
 interface TabConfig {
@@ -105,7 +106,7 @@ function AnimatedTabItem({
 
   // Unread badge pop animation when count changes
   useEffect(() => {
-    if (showBadge) {
+    if (showBadge && (badgeCount ?? 0) > 0) {
       badgeScale.value = withSequence(
         withSpring(1.35, { damping: 4, stiffness: 300 }),
         withSpring(1, { damping: 10, stiffness: 180 })
@@ -139,7 +140,7 @@ function AnimatedTabItem({
           <Ionicons name={iconName} size={24} color={itemColor} />
         </Animated.View>
 
-        {showBadge && (
+        {showBadge && (badgeCount ?? 0) > 0 && (
           <Animated.View
             style={[
               styles.badgeContainer,
@@ -149,8 +150,8 @@ function AnimatedTabItem({
           >
             <Text style={styles.badgeText}>
               {typeof badgeCount === 'number' && badgeCount > 99
-                ? '99+'
-                : String(badgeCount ?? 0)}
+                ? '৯৯+'
+                : toBanglaDigits(badgeCount ?? 0)}
             </Text>
           </Animated.View>
         )}
@@ -249,9 +250,7 @@ function CustomTabBar({ state, descriptors, navigation }: any) {
   const { colors, isDark } = useTheme();
 
   // Total unread count from chat store (Prompt 28; defaults to 0)
-  const unreadCount = useChatStore(
-    (s: any) => s.totalUnread ?? s.unreadCount ?? 0
-  );
+  const unreadCount = useChatStore((s) => s.totalUnread);
 
   const surfaceColor = isDark ? colors.surface : '#FFFFFF';
   const activeColor = colors.primary; // Primary green #00704A

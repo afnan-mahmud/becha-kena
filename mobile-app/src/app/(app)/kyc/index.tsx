@@ -45,7 +45,7 @@ export default function KycLandingScreen() {
       // Guard 2: check server status for pending_review
       try {
         const log = await kycService.getStatus();
-        if (!cancelled && log?.status === 'pending_review') {
+        if (!cancelled && log?.verificationStatus === 'pending_review') {
           router.replace('/(app)/kyc/status');
           return;
         }

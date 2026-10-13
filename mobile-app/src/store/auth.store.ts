@@ -8,6 +8,7 @@ import {
   clearTokens,
   saveUser as cacheUser,
   clearUser as clearCachedUser,
+  clearSessionData,
   getRefreshToken,
   getOnboarded,
   setOnboarded as setStorageOnboarded,
@@ -16,6 +17,7 @@ import { apiClient } from '@/services/api';
 import { ENDPOINTS } from '@/constants/api';
 import { disconnectSocket } from '@/lib/socket';
 import { useChatStore } from '@/store/chat.store';
+import { queryClient } from '@/lib/queryClient';
 
 export interface AuthState {
   user: User | null;
@@ -26,7 +28,7 @@ export interface AuthState {
   // Actions
   login: (authData: { user: User; accessToken: string; refreshToken: string }) => Promise<void>;
   logout: () => Promise<void>;
-  localLogout: () => Promise<void>;
+  localLogout: (redirectTo?: '/(auth)/login' | '/(auth)/welcome') => Promise<void>;
   setUser: (user: User | null) => void;
   refreshUser: () => Promise<User | null>;
   bootstrap: () => Promise<void>;
@@ -70,7 +72,9 @@ export const useAuthStore = create<AuthState>()(
         disconnectSocket();
         await clearTokens();
         await clearCachedUser();
+        await clearSessionData().catch(() => {});
         useChatStore.getState().reset();
+        queryClient.clear();
 
         set({
           user: null,
@@ -88,11 +92,13 @@ export const useAuthStore = create<AuthState>()(
        * Local logout without hitting the API:
        * Used after account deletion or when token refresh fails.
        */
-      localLogout: async () => {
+      localLogout: async (redirectTo = '/(auth)/login') => {
         disconnectSocket();
         await clearTokens();
         await clearCachedUser();
+        await clearSessionData().catch(() => {});
         useChatStore.getState().reset();
+        queryClient.clear();
 
         set({
           user: null,
@@ -100,7 +106,7 @@ export const useAuthStore = create<AuthState>()(
         });
 
         try {
-          router.replace('/(auth)/login');
+          router.replace(redirectTo);
         } catch {
           // Navigation fallback
         }

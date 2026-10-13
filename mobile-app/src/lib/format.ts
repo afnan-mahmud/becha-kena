@@ -142,3 +142,27 @@ export const maskPhone = (phone: string): string => {
   const end = cleaned.slice(-3);
   return `${start}•••••${end}`;
 };
+
+/**
+ * Distance in meters → "২.৪ কিমি দূরে" / "৮৫০ মিটার দূরে"
+ */
+export const formatDistance = (meters?: number | null): string => {
+  if (meters === undefined || meters === null || isNaN(meters)) return '';
+  if (meters < 1000) return `${toBanglaDigits(Math.max(1, Math.round(meters / 10) * 10))} মিটার দূরে`;
+  const km = meters / 1000;
+  return `${toBanglaDigits(km < 10 ? km.toFixed(1) : Math.round(km))} কিমি দূরে`;
+};
+
+/**
+ * Days left until a date (ceil). Negative when already past.
+ */
+export const daysUntil = (dateInput: Date | string | number): number => {
+  const ms = new Date(dateInput).getTime() - Date.now();
+  return Math.ceil(ms / (24 * 60 * 60 * 1000));
+};
+
+/**
+ * "সদস্য: জুন ২০২৫" style month + year
+ */
+export const formatMonthYear = (dateInput: Date | string | number): string =>
+  formatDate(dateInput, 'MMMM yyyy');

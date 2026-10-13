@@ -97,7 +97,7 @@ export function KYCStatusBanner({ showVerifiedBadge = false }: KYCStatusBannerPr
     fetchWithCache()
       .then((log) => {
         if (!mountedRef.current) return;
-        setLogStatus(log?.status ?? 'none');
+        setLogStatus(log?.verificationStatus ?? 'none');
       })
       .catch(() => {
         if (mountedRef.current) setLogStatus('none');

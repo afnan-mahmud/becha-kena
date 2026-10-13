@@ -13,9 +13,9 @@ import {
 /**
  * Drop undefined, null, or empty string params
  */
-function cleanParams(params?: Record<string, any>): Record<string, any> {
+function cleanParams(params?: object): Record<string, string | number | boolean> {
   if (!params) return {};
-  const cleaned: Record<string, any> = {};
+  const cleaned: Record<string, string | number | boolean> = {};
   for (const [key, value] of Object.entries(params)) {
     if (value !== undefined && value !== null && value !== '') {
       cleaned[key] = value;
@@ -43,7 +43,7 @@ export const listingService = {
   getListings: async (params?: GetListingsParams): Promise<ListingsResponse> => {
     return apiClient.get<ListingsResponse>(
       ENDPOINTS.LISTINGS.BASE,
-      cleanParams(params as Record<string, any>)
+      cleanParams(params)
     );
   },
 

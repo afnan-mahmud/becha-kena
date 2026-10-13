@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useCallback, useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -7,7 +7,6 @@ import {
   Pressable,
   RefreshControl,
   ActivityIndicator,
-  Modal,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -19,25 +18,20 @@ import { ListingCard, ListingCardSkeleton } from '@/components/listing/ListingCa
 import { CategoryScroll } from '@/components/common/CategoryScroll';
 import { KYCStatusBanner } from '@/components/kyc/KYCStatusBanner';
 import { useTheme, FontFamilies } from '@/constants/theme';
+import { useUiStore } from '@/store/ui.store';
+import { LocationPicker } from '@/components/common/LocationPicker';
 
-const BANGLADESH_DIVISIONS = [
-  'সারা বাংলাদেশ',
-  'ঢাকা',
-  'চট্টগ্রাম',
-  'রাজশাহী',
-  'খুলনা',
-  'বরিশাল',
-  'সিলেট',
-  'রংপুর',
-  'ময়মনসিংহ',
-];
+const ALL_BANGLADESH = 'সারা বাংলাদেশ';
 
 export default function HomeScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { colors, isDark } = useTheme();
 
-  const [selectedDivision, setSelectedDivision] = useState<string>('সারা বাংলাদেশ');
+  // Persisted default area (also editable from Settings → ডিফল্ট এলাকা)
+  const division = useUiStore((s) => s.selectedDivision);
+  const setDivision = useUiStore((s) => s.setSelectedDivision);
+  const selectedDivision = division ?? ALL_BANGLADESH;
   const [showDivisionModal, setShowDivisionModal] = useState<boolean>(false);
 
   // TanStack Infinite Query for newest listings feed
@@ -51,13 +45,13 @@ export default function HomeScreen() {
     refetch,
     isRefetching,
   } = useInfiniteQuery({
-    queryKey: ['listings', 'newest', selectedDivision],
+    queryKey: ['listings', 'home', { division }],
     queryFn: ({ pageParam = 1 }) =>
       listingService.getListings({
         sort: 'newest',
         limit: 20,
         page: pageParam,
-        division: selectedDivision === 'সারা বাংলাদেশ' ? undefined : selectedDivision,
+        division: division ?? undefined,
       }),
     initialPageParam: 1,
     getNextPageParam: (lastPage) => {
@@ -78,12 +72,19 @@ export default function HomeScreen() {
     if (categoryValue) {
       router.push({
         pathname: '/(app)/(tabs)/search',
-        params: { category: categoryValue },
+        params: { category: categoryValue, t: String(Date.now()) },
       } as any);
     } else {
       router.push('/(app)/(tabs)/search' as any);
     }
   };
+
+  const renderItem = useCallback(
+    ({ item, index }: { item: Listing; index: number }) => (
+      <ListingCard listing={item} variant="grid" index={index} />
+    ),
+    []
+  );
 
   const handleEndReached = () => {
     if (hasNextPage && !isFetchingNextPage && !isLoading) {
@@ -105,10 +106,12 @@ export default function HomeScreen() {
       <FlatList
         data={listings}
         numColumns={2}
-        keyExtractor={(item) => item.id || item._id || Math.random().toString()}
-        renderItem={({ item }) => (
-          <ListingCard listing={item} variant="grid" />
-        )}
+        keyExtractor={(item) => item.id}
+        renderItem={renderItem}
+        removeClippedSubviews
+        windowSize={7}
+        maxToRenderPerBatch={10}
+        initialNumToRender={8}
         contentContainerStyle={styles.listContent}
         columnWrapperStyle={styles.columnWrapper}
         onEndReached={handleEndReached}
@@ -188,7 +191,7 @@ export default function HomeScreen() {
 
             {/* Search Pill */}
             <Pressable
-              onPress={() => router.push('/(app)/(tabs)/search' as any)}
+              onPress={() => router.push({ pathname: '/(app)/(tabs)/search', params: { focus: String(Date.now()) } } as any)}
               style={[
                 styles.searchPill,
                 {
@@ -227,9 +230,9 @@ export default function HomeScreen() {
               >
                 সর্বশেষ বিজ্ঞাপন
               </Text>
-              {selectedDivision !== 'সারা বাংলাদেশ' && (
+              {division !== null && (
                 <Pressable
-                  onPress={() => setSelectedDivision('সারা বাংলাদেশ')}
+                  onPress={() => setDivision(null)}
                 >
                   <Text style={[styles.filterResetText, { color: colors.primary }]}>
                     সব এলাকা
@@ -295,9 +298,9 @@ export default function HomeScreen() {
               >
                 অন্যান্য বিভাগ বা এলাকা নির্বাচন করে দেখতে পারেন
               </Text>
-              {selectedDivision !== 'সারা বাংলাদেশ' && (
+              {division !== null && (
                 <Pressable
-                  onPress={() => setSelectedDivision('সারা বাংলাদেশ')}
+                  onPress={() => setDivision(null)}
                   style={[
                     styles.retryButton,
                     { backgroundColor: colors.primary },
@@ -322,87 +325,14 @@ export default function HomeScreen() {
         }
       />
 
-      {/* Location Picker Modal (Prompt 17 placeholder / functional picker) */}
-      <Modal
+      {/* Location Picker (Prompt 17) — only the division matters for the home feed */}
+      <LocationPicker
         visible={showDivisionModal}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setShowDivisionModal(false)}
-      >
-        <Pressable
-          style={styles.modalBackdrop}
-          onPress={() => setShowDivisionModal(false)}
-        >
-          <View
-            style={[
-              styles.modalSheet,
-              { backgroundColor: isDark ? colors.surface : '#FFFFFF' },
-            ]}
-          >
-            <View style={styles.modalHeader}>
-              <Text
-                style={[
-                  styles.modalTitle,
-                  { color: isDark ? colors.text : '#1B2420' },
-                ]}
-              >
-                বিভাগ নির্বাচন করুন
-              </Text>
-              <Pressable onPress={() => setShowDivisionModal(false)}>
-                <Ionicons
-                  name="close"
-                  size={24}
-                  color={isDark ? colors.text : '#1B2420'}
-                />
-              </Pressable>
-            </View>
-
-            {BANGLADESH_DIVISIONS.map((div) => {
-              const isSelected = selectedDivision === div;
-              return (
-                <Pressable
-                  key={div}
-                  onPress={() => {
-                    setSelectedDivision(div);
-                    setShowDivisionModal(false);
-                  }}
-                  style={[
-                    styles.modalOption,
-                    isSelected && {
-                      backgroundColor: isDark ? '#143828' : '#E3F3EC',
-                    },
-                  ]}
-                >
-                  <Text
-                    style={[
-                      styles.modalOptionText,
-                      {
-                        color: isSelected
-                          ? colors.primary
-                          : isDark
-                          ? colors.text
-                          : '#1B2420',
-                        fontFamily: isSelected
-                          ? FontFamilies.semiBold
-                          : FontFamilies.regular,
-                      },
-                    ]}
-                  >
-                    {div}
-                  </Text>
-                  {isSelected && (
-                    <Ionicons
-                      name="checkmark-circle"
-                      size={20}
-                      color={colors.primary}
-                    />
-                  )}
-                </Pressable>
-              );
-            })}
-          </View>
-        </Pressable>
-      </Modal>
+        onClose={() => setShowDivisionModal(false)}
+        value={division ? { division } : null}
+        onSelect={(sel) => setDivision(sel?.division ?? null)}
+        title="এলাকা বেছে নিন"
+      />
     </View>
   );
 }
@@ -559,39 +489,4 @@ const styles = StyleSheet.create({
     height: 16,
   },
 
-  // Modal styles
-  modalBackdrop: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.45)',
-    justifyContent: 'flex-end',
-  },
-  modalSheet: {
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    padding: 20,
-    maxHeight: '80%',
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 14,
-  },
-  modalTitle: {
-    fontSize: 17,
-    fontWeight: '700',
-    fontFamily: FontFamilies.bold,
-  },
-  modalOption: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 12,
-    paddingHorizontal: 12,
-    borderRadius: 10,
-    marginVertical: 2,
-  },
-  modalOptionText: {
-    fontSize: 15,
-  },
 });

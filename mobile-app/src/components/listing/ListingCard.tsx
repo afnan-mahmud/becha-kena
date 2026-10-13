@@ -15,18 +15,27 @@ import Animated, {
   withRepeat,
   withSequence,
   withTiming,
+  FadeInDown,
+  useReducedMotion,
 } from 'react-native-reanimated';
+import { useQueryClient } from '@tanstack/react-query';
+import { listingService } from '@/services/listing.service';
+import { STALE } from '@/lib/queryClient';
 import { Listing } from '@/types/listing.types';
 import { getSeller } from '@/services/listing.service';
 import { getCategoryLabel, getConditionLabel } from '@/constants/categories';
-import { formatPrice, formatRelativeTime, toBanglaDigits } from '@/lib/format';
+import { formatDistance, formatPrice, formatRelativeTime, toBanglaDigits } from '@/lib/format';
 import { useTheme, FontFamilies } from '@/constants/theme';
 
 export interface ListingCardProps {
   listing: Listing;
   variant?: 'grid' | 'list';
   onPress?: () => void;
+  /** Position in the list — the first 10 cards fade/slide in with a small stagger */
+  index?: number;
 }
+
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 const BLURHASH_PLACEHOLDER = 'L6PZfSi_.AyE_3t7t7R**0o#DgR4';
 
@@ -70,8 +79,15 @@ export const ListingCard = React.memo(function ListingCard({
   listing,
   variant = 'grid',
   onPress,
+  index,
 }: ListingCardProps) {
   const router = useRouter();
+  const queryClient = useQueryClient();
+  const reduceMotion = useReducedMotion();
+  const entering =
+    index !== undefined && index < 10 && !reduceMotion
+      ? FadeInDown.delay(index * 40).duration(300)
+      : undefined;
   const { colors, isDark } = useTheme();
   const scale = useSharedValue(1);
 
@@ -82,7 +98,13 @@ export const ListingCard = React.memo(function ListingCard({
 
   const handlePressIn = () => {
     // Press-in scale animation (0.97)
-    scale.value = withSpring(0.97, { damping: 12, stiffness: 300 });
+    if (!reduceMotion) scale.value = withSpring(0.97, { damping: 12, stiffness: 300 });
+    // Warm the detail screen's cache while the finger is still down (Prompt 49)
+    queryClient.prefetchQuery({
+      queryKey: ['listing', listing.id],
+      queryFn: () => listingService.getListing(listing.id),
+      staleTime: STALE.listing,
+    });
   };
 
   const handlePressOut = () => {
@@ -109,17 +131,21 @@ export const ListingCard = React.memo(function ListingCard({
     .join(', ');
 
   const timeText = formatRelativeTime(listing.createdAt);
+  const distanceText = formatDistance(listing.distance);
 
   // -------------------------------------------------------------
   // List Variant (Search results, 110px square thumbnail)
   // -------------------------------------------------------------
   if (variant === 'list') {
     return (
-      <Pressable
+      <AnimatedPressable
+        entering={entering}
         onPress={handlePress}
         onPressIn={handlePressIn}
         onPressOut={handlePressOut}
         style={styles.listPressable}
+        accessibilityRole="button"
+        accessibilityLabel={`${listing.title}, ${formatPrice(listing.price)}`}
       >
         <Animated.View
           style={[
@@ -141,6 +167,7 @@ export const ListingCard = React.memo(function ListingCard({
                 transition={200}
                 placeholder={{ blurhash: BLURHASH_PLACEHOLDER }}
                 cachePolicy="memory-disk"
+                recyclingKey={firstImage}
               />
             ) : (
               <View style={[styles.listThumbnail, styles.noImageContainer]}>
@@ -196,11 +223,11 @@ export const ListingCard = React.memo(function ListingCard({
               style={[styles.metaText, { color: colors.textMuted }]}
               numberOfLines={1}
             >
-              {locationText} • {timeText}
+              {distanceText || locationText} • {timeText}
             </Text>
           </View>
         </Animated.View>
-      </Pressable>
+      </AnimatedPressable>
     );
   }
 
@@ -208,11 +235,14 @@ export const ListingCard = React.memo(function ListingCard({
   // Grid Variant (Home feed, 2 columns, 4:3 Image)
   // -------------------------------------------------------------
   return (
-    <Pressable
+    <AnimatedPressable
+      entering={entering}
       onPress={handlePress}
       onPressIn={handlePressIn}
       onPressOut={handlePressOut}
       style={styles.gridPressable}
+      accessibilityRole="button"
+      accessibilityLabel={`${listing.title}, ${formatPrice(listing.price)}`}
     >
       <Animated.View
         style={[
@@ -234,6 +264,7 @@ export const ListingCard = React.memo(function ListingCard({
               transition={200}
               placeholder={{ blurhash: BLURHASH_PLACEHOLDER }}
               cachePolicy="memory-disk"
+              recyclingKey={firstImage}
             />
           ) : (
             <View style={[styles.gridImage, styles.noImageContainer]}>
@@ -326,7 +357,7 @@ export const ListingCard = React.memo(function ListingCard({
           )}
         </View>
       </Animated.View>
-    </Pressable>
+    </AnimatedPressable>
   );
 });
 

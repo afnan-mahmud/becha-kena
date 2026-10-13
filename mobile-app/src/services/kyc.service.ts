@@ -1,23 +1,10 @@
 import { apiClient } from '@/services/api';
 import { ENDPOINTS } from '@/constants/api';
+import type { VerificationLog, VerificationStatus } from '@/types/user.types';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-export type VerificationStatus =
-  | 'pending_review'
-  | 'approved'
-  | 'rejected'
-  | 'not_submitted';
-
-export interface VerificationLog {
-  id: string;
-  userId: string;
-  type: 'adult' | 'minor';
-  status: VerificationStatus;
-  submittedAt: string;
-  reviewedAt?: string | null;
-  rejectionReason?: string | null;
-}
+export type { VerificationLog, VerificationStatus } from '@/types/user.types';
 
 // Submit payloads
 export interface AdultKycPayload {
