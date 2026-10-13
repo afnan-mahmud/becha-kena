@@ -15,3 +15,5 @@ export * from './SegmentedTabs';
 export * from './ListRow';
 export * from './StarRating';
 export * from './ImageCarousel';
+export * from './StepProgress';
+export * from './SuccessCheck';
